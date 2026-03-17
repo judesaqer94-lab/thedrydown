@@ -910,8 +910,6 @@ export default function Home() {
               <div>
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Community</div>
                 <div className="flex flex-col gap-1.5">
-                  <a href={SUGGEST_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-mid hover:text-ink transition-colors no-underline">Suggest a Perfume</a>
-                  <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-mid hover:text-ink transition-colors no-underline">Give Feedback</a>
                 </div>
               </div>
             </div>
