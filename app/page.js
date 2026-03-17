@@ -1,115 +1,102 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, BRAND_TYPES, NOTE_COLORS_MAP } from '../data/perfumes';
-import { supabase } from '../lib/supabase';
 
-/* ═══ PALETTE ═══ */
-const TYPE_COLORS = { Niche: "#8B7A5E", Designer: "#5B7B9B", Arabic: "#B08060", Indie: "#7B9B78", Affordable: "#8B9B8B", Celebrity: "#A07898" };
+/* ═══ STYLE CONSTANTS ═══ */
 const FAMILY_COLORS = {
-  Floral: "#D291BC", Woody: "#A18062", Oriental: "#D4915B", Fresh: "#7EC8A0",
-  Citrus: "#E8D44D", Gourmand: "#CC8855", Fruity: "#E07B7B", Aromatic: "#73C27E",
-  Leather: "#8B7355", Aquatic: "#6BB3D9", Smoky: "#8E8E8E", Green: "#73C27E",
-  Musky: "#C4B7A6", Chypre: "#7A6B3C",
+  Floral: "#C4728F", Woody: "#7B6348", Oriental: "#A0522D", Fresh: "#5B8F6B",
+  Citrus: "#B89B30", Gourmand: "#8B6240", Fruity: "#C4548A", Aromatic: "#5B7F5B",
+  Leather: "#6B4D35", Aquatic: "#4A8A9F", Smoky: "#6B6560", Green: "#5B8F5B",
+  "Floral Aldehyde": "#B07090", "Woody Floral": "#8B7060",
 };
-const NOTE_COLORS = { top: "#7EC8A0", heart: "#D291BC", base: "#A18062" };
-const NOTE_LABELS = { top: "Top", heart: "Heart", base: "Base" };
-const ACCORD_COLORS = {
-  sweet:"#E28B90", warm:"#D4915B", "warm spicy":"#C87941", woody:"#A18062", floral:"#D291BC",
-  fruity:"#E07B7B", citrus:"#E8D44D", fresh:"#7EC8A0", musky:"#C4B7A6", powdery:"#D8BFD8",
-  rose:"#E8ADAD", oud:"#6B4226", amber:"#DDAA44", vanilla:"#F5DEB3", coffee:"#6F4E37",
-  leather:"#8B7355", tobacco:"#9B7653", boozy:"#BF9B30", gourmand:"#CC8855", coconut:"#F5E6D3",
-  chocolate:"#7B3F00", smoky:"#8E8E8E", incense:"#B5651D", clean:"#87CEEB", aquatic:"#6BB3D9",
-  green:"#73C27E", salty:"#7EC8E3", honey:"#EB9E3F", creamy:"#F5E6D3", earthy:"#9B7653",
-  cherry:"#DC143C", patchouli:"#7A6B3C", sandalwood:"#C19A6B", tea:"#7EC8A0", iris:"#B19CD9",
-  fig:"#9B7653", saffron:"#F4C430", cinnamon:"#D2691E", tuberose:"#F0D0E0", lavender:"#B19CD9",
-  "white floral":"#F0D0E0", almond:"#EDDCB1", plum:"#8E4585", peach:"#FFDAB9", mango:"#F4BB44",
-  jasmine:"#F8EBB0", orange:"#FFA500", bergamot:"#E8D44D", violet:"#8B7FC7", mint:"#98FF98",
-  pepper:"#B5651D", cardamom:"#B5A642", ginger:"#D2A03D", "orange blossom":"#FFD580",
-  magnolia:"#F0C0D0", lily:"#F5E6D3", orchid:"#DA70D6", marine:"#6BB3D9", musk:"#C4B7A6",
-  cedar:"#A18062", vetiver:"#8B9E5B", tonka:"#C19A6B", benzoin:"#B5651D",
-  balsamic:"#B5651D", animalic:"#8B7355", "skin scent":"#E8D5C4", dark:"#4A3728",
-  resinous:"#B5651D", tropical:"#FFB347", berry:"#8B3A62", mineral:"#A9A9A9",
-  "fresh spicy":"#90C87E", solar:"#F5D76E", aromatic:"#73C27E", ozonic:"#B0E0E6",
-  aldehydic:"#E8D5C4", herbal:"#73C27E", juniper:"#6B8E5B", moss:"#6B8E5B",
-  cotton:"#E8D5C4", caramel:"#C68E3F", toffee:"#C68E3F", marshmallow:"#F5E6D3",
-  "cotton candy":"#FFB6C1", rum:"#BF9B30", spicy:"#C87941", talc:"#E8D5C4",
-  apple:"#7EC87E", pineapple:"#F5D76E", camphor:"#B0E0E6"
-};
+const TYPE_COLORS = { Niche: "#8B6914", Designer: "#4A6B8A", Arabic: "#A0522D", Indie: "#6B8F6B", Affordable: "#6B8B6B", Celebrity: "#8B5A8B" };
+const NOTE_COLORS = { top: "#E8B84A", heart: "#C4728F", base: "#7B6348" };
+const NOTE_LABELS = { top: "Top Notes", heart: "Heart Notes", base: "Base Notes" };
 
 const RETAILERS = [
-  { name: "FragranceNet", tag: "Best Price", url: "https://www.fragrancenet.com/search?q=Q&utm_source=thedrydown" },
-  { name: "ScentSplit", tag: "Decants", url: "https://www.scentsplit.com/search?q=Q&ref=thedrydown" },
-  { name: "Amazon", tag: "Fast Ship", url: "https://www.amazon.com/s?k=Q&tag=thedrydown-20" },
-  { name: "Sephora", tag: "Rewards", url: "https://www.sephora.com/search?keyword=Q&utm_source=thedrydown" },
-  { name: "Notino", tag: "Global", url: "https://www.notino.com/search/?q=Q&utm_source=thedrydown" },
+  { name: "FragranceNet", icon: "🛒", color: "#2E7D32", tag: "Best Price", url: "https://www.fragrancenet.com/search?q=Q&utm_source=thedrydown" },
+  { name: "ScentSplit", icon: "💧", color: "#1565C0", tag: "Decants", url: "https://www.scentsplit.com/search?q=Q&ref=thedrydown" },
+  { name: "Amazon", icon: "📦", color: "#FF9800", tag: "Fast Ship", url: "https://www.amazon.com/s?k=Q&tag=thedrydown-20" },
+  { name: "Sephora", icon: "✨", color: "#000", tag: "Rewards", url: "https://www.sephora.com/search?keyword=Q&utm_source=thedrydown" },
+  { name: "Notino", icon: "🌍", color: "#E91E63", tag: "Global", url: "https://www.notino.com/search/?q=Q&utm_source=thedrydown" },
 ];
-
-/* ═══ FEEDBACK CONFIG ═══ */
-/* Replace this URL with your Google Form link after creating it */
-const FEEDBACK_URL = "https://forms.gle/YOUR_FORM_ID_HERE";
-const SUGGEST_URL = "https://forms.gle/YOUR_FORM_ID_HERE";
 
 const SEED_REVIEWS = [
-  { user: "Nour A.", rating: 5, perfume: "Khamrah", title: "Beast mode for AED 103", body: "Sweet, warm, spicy — lasts 10+ hours. Unbeatable at this price point.", date: "2d ago", helpful: 47 },
-  { user: "Layla H.", rating: 5, perfume: "Baccarat Rouge 540", title: "The hype is real", body: "Saffron into ambergris is perfumery at its finest. Worth every dirham.", date: "3d ago", helpful: 62 },
-  { user: "Dina R.", rating: 5, perfume: "Cloud", title: "BR540 dupe that delivers", body: "At this price, nothing compares. Sweet, cozy, compliment magnet.", date: "5d ago", helpful: 89 },
-  { user: "Fatima Z.", rating: 5, perfume: "Angels' Share", title: "Liquid gold", body: "Cognac cinnamon opening is intoxicating. Kilian nailed this one.", date: "6d ago", helpful: 72 },
-  { user: "Rania Q.", rating: 4, perfume: "La Rosée", title: "90% of Delina, 10% the price", body: "Rose and lychee spot on. Lattafa keeps winning.", date: "3d ago", helpful: 94 },
-  { user: "Leila F.", rating: 5, perfume: "Grand Soir", title: "Amber perfection", body: "Pure warm amber that envelops you. 12+ hours longevity.", date: "5d ago", helpful: 67 },
-  { user: "Yasmin L.", rating: 5, perfume: "Tobacco Vanille", title: "Unisex masterpiece", body: "Date night staple. Rich, warm, addictive.", date: "1w ago", helpful: 55 },
-  { user: "Jenna W.", rating: 4, perfume: "Missing Person", title: "Your skin but better", body: "Clean warm skin scent. Office-safe, intimate, beautiful.", date: "2d ago", helpful: 63 },
+  { user: "Nour A.", rating: 5, perfume: "Khamrah", title: "Beast mode for $28", body: "Sweet, warm, spicy — lasts 10+ hours.", date: "2d ago", helpful: 47 },
+  { user: "Layla H.", rating: 5, perfume: "Baccarat Rouge 540", title: "The hype is real", body: "Saffron into ambergris is perfumery at its finest.", date: "3d ago", helpful: 62 },
+  { user: "Dina R.", rating: 5, perfume: "Cloud", title: "BR540 dupe that delivers", body: "At this price, nothing compares.", date: "5d ago", helpful: 89 },
+  { user: "Fatima Z.", rating: 5, perfume: "Angels' Share", title: "Liquid gold", body: "Cognac cinnamon opening is intoxicating.", date: "6d ago", helpful: 72 },
+  { user: "Rania Q.", rating: 4, perfume: "La Rosée", title: "90% of Delina, 10% the price", body: "Rose and lychee spot on.", date: "3d ago", helpful: 94 },
+  { user: "Leila F.", rating: 5, perfume: "Grand Soir", title: "Amber perfection", body: "Pure warm amber. 12+ hours longevity.", date: "5d ago", helpful: 67 },
+  { user: "Yasmin L.", rating: 5, perfume: "Tobacco Vanille", title: "Unisex masterpiece", body: "Date night staple.", date: "1w ago", helpful: 55 },
+  { user: "Jenna W.", rating: 4, perfume: "Missing Person", title: "Your skin but better", body: "Clean warm skin scent.", date: "2d ago", helpful: 63 },
 ];
 
-/* ═══ COMPONENTS ═══ */
-function Stars({ value, size = 13 }) {
-  return <span style={{ color: "#9B8EC4", fontSize: size, letterSpacing: 2 }}>{"★".repeat(Math.floor(value))}{value % 1 >= 0.5 ? "½" : ""}<span style={{ color: "#D8D0C8" }}>{"★".repeat(5 - Math.ceil(value))}</span></span>;
-}
-
-function Tag({ children, dark, active, onClick, style, color }) {
-  const hasColor = color && !active && !dark;
+/* ═══ SMALL COMPONENTS ═══ */
+function Bottle({ family, size = 48 }) {
+  const c = { Floral: ["#E8A4BA", "#C4728F"], Woody: ["#B89B70", "#7B6348"], Oriental: ["#D4A06A", "#A0522D"], Fresh: ["#8FC4A0", "#5B8F6B"], Citrus: ["#E8D060", "#B89B30"], Gourmand: ["#C4A07A", "#8B6240"], Fruity: ["#E89AB0", "#C4548A"], Aromatic: ["#8FC48F", "#5B7F5B"] }[family] || ["#ccc", "#999"];
+  const id = "b" + Math.random().toString(36).slice(2, 7);
   return (
-    <span onClick={onClick}
-      className={`inline-block text-xs tracking-wide uppercase transition-all cursor-default`}
-      style={{
-        padding: '5px 10px',
-        background: active ? '#1A1A1A' : dark ? '#1A1A1A' : hasColor ? color + '12' : 'transparent',
-        border: `1px solid ${active ? '#1A1A1A' : hasColor ? color + '40' : '#D8D0C8'}`,
-        color: active ? '#FAF8F5' : dark ? '#FAF8F5' : hasColor ? color : '#8C8378',
-        fontWeight: 500,
-        letterSpacing: '0.06em',
-        ...style,
-        cursor: onClick ? 'pointer' : 'default',
-      }}>
-      {children}
-    </span>
+    <svg width={size} height={size * 1.4} viewBox="0 0 40 56" style={{ flexShrink: 0 }}>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={c[0]} /><stop offset="100%" stopColor={c[1]} /></linearGradient></defs>
+      <rect x="15" y="0" width="10" height="6" rx="1.5" fill={c[1]} opacity=".7" />
+      <rect x="17" y="5" width="6" height="5" rx="1" fill={c[1]} opacity=".5" />
+      <rect x="8" y="10" width="24" height="42" rx="5" fill={`url(#${id})`} />
+      <rect x="8" y="10" width="24" height="42" rx="5" fill="white" opacity=".15" />
+      <rect x="12" y="16" width="5" height="28" rx="2.5" fill="white" opacity=".18" />
+    </svg>
   );
 }
 
-function PerfumeCard({ perfume: p, onClick }) {
-  const fc = FAMILY_COLORS[p.family] || '#8C8378';
+function Stars({ value, size = 13 }) {
+  return <span style={{ color: "#D4A94B", fontSize: size, letterSpacing: 1 }}>{"★".repeat(Math.floor(value))}{value % 1 >= 0.5 ? "½" : ""}<span style={{ color: "#DDD" }}>{"★".repeat(5 - Math.ceil(value))}</span></span>;
+}
+
+function Badge({ text, color, bg }) {
+  return <span className="px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap" style={{ background: bg || "#f5f3f0", color: color || "#6B6560" }}>{text}</span>;
+}
+
+function NoteBar({ name, strength, color, noteColor }) {
+  const barColor = noteColor || color;
   return (
-    <div onClick={onClick} className="cursor-pointer group transition-all" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8' }}>
-      <div className="flex justify-between items-start gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <h3 className="font-serif text-xl leading-tight" style={{ letterSpacing: '-0.02em' }}>{p.name}</h3>
-            <span className="text-xs text-stone uppercase tracking-wider">{p.year}</span>
-          </div>
-          <div className="text-sm text-stone mt-1">{p.brand}</div>
-          <div className="flex gap-1.5 mt-2 flex-wrap">
-            <Tag color={fc}>{p.family}</Tag>
-            <Tag>{p.concentration}</Tag>
-            <Tag>{p.gender}</Tag>
-          </div>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <div className="font-serif text-2xl" style={{ letterSpacing: '-0.03em' }}>AED {p.priceLow}</div>
-          <div className="mt-1"><Stars value={p.rating} size={11} /></div>
-        </div>
+    <div className="flex items-center gap-2 mb-1.5">
+      {noteColor && <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: noteColor, border: '0.5px solid rgba(0,0,0,0.08)' }} />}
+      <div className="text-sm text-right font-medium text-gray-700 truncate flex-shrink-0" style={{ width: noteColor ? 85 : 96 }}>{name}</div>
+      <div className="flex-1 h-3.5 rounded bg-gray-100 overflow-hidden min-w-[60px]">
+        <div className="h-full rounded transition-all duration-700" style={{ width: `${strength}%`, background: `linear-gradient(90deg, ${barColor}90, ${barColor})` }} />
       </div>
-      <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
-        {p.notes.filter(n => n.position === "top").slice(0, 4).map(n => n.name).join(" · ")}
+      <div className="w-7 text-xs text-gray-400 text-right flex-shrink-0">{strength}%</div>
+    </div>
+  );
+}
+
+function PerfumeCard({ perfume: p, onClick, compact }) {
+  const fc = FAMILY_COLORS[p.family] || "#6B6560";
+  return (
+    <div onClick={onClick} className="bg-white border border-gray-200 rounded-xl cursor-pointer transition-all hover:shadow-md flex items-center gap-3" style={{ padding: compact ? 10 : 14 }}>
+      <Bottle family={p.family} size={compact ? 28 : 36} />
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-semibold text-gray-900 truncate" style={{ fontSize: compact ? 13 : 15 }}>{p.name}</div>
+            <div className="text-gray-500" style={{ fontSize: compact ? 11 : 12 }}>{p.brand}</div>
+          </div>
+          <div className="text-right flex-shrink-0 ml-2">
+            <div className="font-bold text-gray-900" style={{ fontSize: compact ? 12 : 14 }}>${p.priceLow}</div>
+            <Stars value={p.rating} size={compact ? 9 : 10} />
+          </div>
+        </div>
+        {!compact && (
+          <div className="flex gap-1 flex-wrap mt-1">
+            <Badge text={p.family} color={fc} bg={fc + "15"} />
+            <Badge text={p.gender} />
+            <Badge text={p.concentration} />
+          </div>
+        )}
+        <div className="text-xs text-gray-400 mt-1">
+          {p.notes.filter(n => n.position === "top").slice(0, 3).map(n => n.name).join(" · ")}
+        </div>
       </div>
     </div>
   );
@@ -129,41 +116,43 @@ function getSimilar(perfume) {
     .slice(0, 6);
 }
 
-/* ═══ SUBMIT FORM ═══ */
+/* ═══ SUBMIT PERFUME FORM ═══ */
 function SubmitForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState({ name: "", brand: "", year: 2025, gender: "Women", concentration: "EDP", family: "Floral", priceLow: "", priceHigh: "", topNotes: "", heartNotes: "", baseNotes: "", accords: "", description: "" });
   const u = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const families = ["Floral", "Oriental", "Woody", "Aromatic", "Gourmand", "Fruity", "Citrus", "Fresh", "Aquatic", "Leather", "Green"];
   const concs = ["EDT", "EDP", "Extrait", "Parfum", "Cologne", "Body Mist", "Perfume Oil", "Hair Mist", "Elixir"];
-  const submit = () => { if (!form.name || !form.brand) { alert("Name and brand are required"); return; } onSubmit({ ...form, priceLow: Number(form.priceLow) || 0, priceHigh: Number(form.priceHigh) || 0 }); };
-  const inp = "w-full p-3 border border-faint bg-transparent text-sm focus:border-ink focus:outline-none transition-colors";
+  const submit = () => { if (!form.name || !form.brand) { alert("Name and brand are required!"); return; } onSubmit({ ...form, priceLow: Number(form.priceLow) || 0, priceHigh: Number(form.priceHigh) || 0 }); };
+  const inp = "w-full p-2.5 rounded-lg border border-gray-300 text-sm font-body focus:border-brand-gold focus:outline-none";
   return (
-    <div className="animate-fade-up max-w-2xl">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="font-serif text-4xl">Submit a Perfume</h2>
-        <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center text-stone hover:text-ink transition-colors text-xl">×</button>
+    <div className="bg-white border border-gray-200 rounded-xl p-6 animate-fade-up">
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="font-display text-2xl font-semibold">Submit a Perfume</h2>
+        <button onClick={onCancel} className="w-8 h-8 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 text-lg flex items-center justify-center">×</button>
       </div>
-      <p className="text-sm text-stone mb-8 leading-relaxed">Help grow The Dry Down. Submit a fragrance and it will be reviewed before going live.</p>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Name *</label><input value={form.name} onChange={e => u("name", e.target.value)} placeholder="Lost Cherry" className={inp} /></div>
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Brand *</label><input value={form.brand} onChange={e => u("brand", e.target.value)} placeholder="Tom Ford" className={inp} /></div>
+      <p className="text-sm text-gray-500 mb-5 leading-relaxed">Help grow The Dry Down database! Submit a perfume and it will be reviewed before going live.</p>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Perfume Name *</label><input value={form.name} onChange={e => u("name", e.target.value)} placeholder="e.g. Lost Cherry" className={inp} /></div>
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Brand *</label><input value={form.brand} onChange={e => u("brand", e.target.value)} placeholder="e.g. Tom Ford" className={inp} /></div>
       </div>
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Year</label><input type="number" value={form.year} onChange={e => u("year", Number(e.target.value))} className={inp} /></div>
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Gender</label><select value={form.gender} onChange={e => u("gender", e.target.value)} className={inp}>{["Women", "Men", "Unisex"].map(g => <option key={g}>{g}</option>)}</select></div>
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Type</label><select value={form.concentration} onChange={e => u("concentration", e.target.value)} className={inp}>{concs.map(c => <option key={c}>{c}</option>)}</select></div>
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Family</label><select value={form.family} onChange={e => u("family", e.target.value)} className={inp}>{families.map(f => <option key={f}>{f}</option>)}</select></div>
+      <div className="grid grid-cols-4 gap-3 mb-3">
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Year</label><input type="number" value={form.year} onChange={e => u("year", Number(e.target.value))} className={inp} /></div>
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Gender</label><select value={form.gender} onChange={e => u("gender", e.target.value)} className={inp}>{["Women", "Men", "Unisex"].map(g => <option key={g}>{g}</option>)}</select></div>
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Concentration</label><select value={form.concentration} onChange={e => u("concentration", e.target.value)} className={inp}>{concs.map(c => <option key={c}>{c}</option>)}</select></div>
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Family</label><select value={form.family} onChange={e => u("family", e.target.value)} className={inp}>{families.map(f => <option key={f}>{f}</option>)}</select></div>
       </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Price Low (AED)</label><input type="number" value={form.priceLow} onChange={e => u("priceLow", e.target.value)} placeholder="330" className={inp} /></div>
-        <div><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">Price High (AED)</label><input type="number" value={form.priceHigh} onChange={e => u("priceHigh", e.target.value)} placeholder="480" className={inp} /></div>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Price Low ($)</label><input type="number" value={form.priceLow} onChange={e => u("priceLow", e.target.value)} placeholder="e.g. 90" className={inp} /></div>
+        <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Price High ($)</label><input type="number" value={form.priceHigh} onChange={e => u("priceHigh", e.target.value)} placeholder="e.g. 130" className={inp} /></div>
       </div>
-      {[["Top Notes", "topNotes", "Bergamot, Pink Pepper, Raspberry"], ["Heart Notes", "heartNotes", "Rose, Jasmine, Orange Blossom"], ["Base Notes", "baseNotes", "Vanilla, Musk, Sandalwood"], ["Main Accords", "accords", "floral, sweet, warm, powdery"]].map(([label, key, ph]) => (
-        <div key={key} className="mb-4"><label className="block text-xs text-stone uppercase tracking-widest mb-2 font-medium">{label}</label><input value={form[key]} onChange={e => u(key, e.target.value)} placeholder={ph} className={inp} /></div>
-      ))}
-      <div className="flex gap-3 mt-8">
-        <button onClick={onCancel} className="px-6 py-3 text-sm font-medium text-stone border border-faint hover:border-stone transition-colors">Cancel</button>
-        <button onClick={submit} className="px-8 py-3 text-sm font-medium bg-ink text-paper hover:opacity-80 transition-opacity">Submit for Review</button>
+      <div className="mb-3"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Top Notes (comma separated)</label><input value={form.topNotes} onChange={e => u("topNotes", e.target.value)} placeholder="e.g. Bergamot, Pink Pepper, Raspberry" className={inp} /></div>
+      <div className="mb-3"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Heart Notes (comma separated)</label><input value={form.heartNotes} onChange={e => u("heartNotes", e.target.value)} placeholder="e.g. Rose, Jasmine, Orange Blossom" className={inp} /></div>
+      <div className="mb-3"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Base Notes (comma separated)</label><input value={form.baseNotes} onChange={e => u("baseNotes", e.target.value)} placeholder="e.g. Vanilla, Musk, Sandalwood" className={inp} /></div>
+      <div className="mb-3"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Main Accords (comma separated)</label><input value={form.accords} onChange={e => u("accords", e.target.value)} placeholder="e.g. floral, sweet, warm, powdery" className={inp} /></div>
+      <div className="mb-4"><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Description (optional)</label><textarea value={form.description} onChange={e => u("description", e.target.value)} placeholder="Brief description..." rows={3} className={inp + " resize-y"} /></div>
+      <div className="flex gap-3 justify-end">
+        <button onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-500 hover:bg-gray-50">Cancel</button>
+        <button onClick={submit} className="px-6 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800">Submit for Review</button>
       </div>
     </div>
   );
@@ -172,36 +161,29 @@ function SubmitForm({ onSubmit, onCancel }) {
 /* ═══ ADMIN PANEL ═══ */
 function AdminPanel({ pending, onApprove, onReject, onClose }) {
   return (
-    <div className="animate-fade-up max-w-2xl">
-      <div className="flex justify-between items-center mb-8">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 animate-fade-up">
+      <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="font-serif text-4xl">Admin Panel</h2>
-          <p className="text-sm text-stone mt-2">Review community submissions</p>
+          <h2 className="font-display text-2xl font-semibold">Admin Review Panel</h2>
+          <p className="text-sm text-gray-500 mt-1">Review and approve community submissions</p>
         </div>
-        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-stone hover:text-ink text-xl">×</button>
+        <button onClick={onClose} className="w-8 h-8 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 text-lg flex items-center justify-center">×</button>
       </div>
       {pending.length === 0 ? (
-        <div className="py-16 text-stone text-center">
-          <div className="font-serif text-2xl italic mb-2">All clear</div>
-          <div className="text-sm">No pending submissions</div>
-        </div>
+        <div className="text-center py-10 text-gray-400"><div className="text-3xl mb-2">✓</div>No pending submissions</div>
       ) : pending.map((p, i) => (
-        <div key={i} className="border-b border-faint py-6">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <span className="font-serif text-xl">{p.name}</span>
-              <span className="text-stone ml-2 text-sm">by {p.brand}</span>
-            </div>
-            <div className="flex gap-1.5"><Tag>{p.family}</Tag><Tag>{p.gender}</Tag></div>
+        <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3">
+          <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
+            <div><span className="font-display text-lg font-semibold">{p.name}</span><span className="text-gray-500 ml-2 text-sm">by {p.brand}</span></div>
+            <div className="flex gap-1"><Badge text={p.family} /><Badge text={p.gender} /><Badge text={p.concentration} /><Badge text={`$${p.priceLow}–$${p.priceHigh}`} /></div>
           </div>
-          <div className="text-xs text-stone space-y-1 mb-4">
-            <div><span className="uppercase tracking-wider text-stone/60">Top:</span> {p.topNotes}</div>
-            <div><span className="uppercase tracking-wider text-stone/60">Heart:</span> {p.heartNotes}</div>
-            <div><span className="uppercase tracking-wider text-stone/60">Base:</span> {p.baseNotes}</div>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => onApprove(i)} className="px-5 py-2 text-xs font-medium bg-ink text-paper hover:opacity-80">Approve</button>
-            <button onClick={() => onReject(i)} className="px-5 py-2 text-xs font-medium border border-faint text-stone hover:border-stone">Reject</button>
+          <div className="text-xs text-gray-600 mb-1"><strong>Top:</strong> {p.topNotes}</div>
+          <div className="text-xs text-gray-600 mb-1"><strong>Heart:</strong> {p.heartNotes}</div>
+          <div className="text-xs text-gray-600 mb-1"><strong>Base:</strong> {p.baseNotes}</div>
+          <div className="text-xs text-gray-600 mb-2"><strong>Accords:</strong> {p.accords}</div>
+          <div className="flex gap-2">
+            <button onClick={() => onApprove(i)} className="px-4 py-1.5 rounded-md bg-green-700 text-white text-xs font-semibold hover:bg-green-800">✓ Approve</button>
+            <button onClick={() => onReject(i)} className="px-4 py-1.5 rounded-md border border-red-500 text-red-500 text-xs font-semibold hover:bg-red-50">✗ Reject</button>
           </div>
         </div>
       ))}
@@ -229,145 +211,40 @@ export default function Home() {
   const [userReviews, setUserReviews] = useState([]);
   const [pending, setPending] = useState([]);
   const [toast, setToast] = useState(null);
-  const [dbVotes, setDbVotes] = useState({});
 
   const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   const nav = (v) => { setView(v); scrollTop(); };
 
-  // Load reviews + pending submissions + votes from Supabase on mount
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [revRes, subRes, voteRes] = await Promise.all([
-          supabase.from('reviews').select('*').order('created_at', { ascending: false }),
-          supabase.from('submissions').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
-          supabase.from('votes').select('*'),
-        ]);
-        if (revRes.data) setUserReviews(revRes.data.map(r => ({
-          user: r.user_name, rating: r.rating, perfume: r.perfume_name,
-          title: r.title, body: r.body, date: new Date(r.created_at).toLocaleDateString(), helpful: r.helpful || 0, id: r.id
-        })));
-        if (subRes.data) setPending(subRes.data);
-        if (voteRes.data) {
-          const grouped = {};
-          voteRes.data.forEach(v => {
-            const key = `${v.perfume_name}:${v.vote_type}`;
-            if (!grouped[key]) grouped[key] = {};
-            grouped[key][v.vote_value] = (grouped[key][v.vote_value] || 0) + 1;
-          });
-          setDbVotes(grouped);
-        }
-      } catch (e) { console.log('Supabase load error:', e); }
-    }
-    loadData();
-  }, []);
-
-  // Submit perfume → Supabase
-  const handleSubmit = useCallback(async (form) => {
-    try {
-      const { error } = await supabase.from('submissions').insert({
-        name: form.name, brand: form.brand, year: form.year, gender: form.gender,
-        concentration: form.concentration, family: form.family,
-        price_low: Number(form.priceLow) || 0, price_high: Number(form.priceHigh) || 0,
-        top_notes: form.topNotes, heart_notes: form.heartNotes,
-        base_notes: form.baseNotes, accords: form.accords, description: form.description,
-      });
-      if (error) throw error;
-      nav("browse");
-      showToast("Perfume submitted for review!");
-      // Reload pending
-      const { data } = await supabase.from('submissions').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-      if (data) setPending(data);
-    } catch (e) {
-      console.error('Submit error:', e);
-      showToast("Error submitting — try again");
-    }
+  const handleSubmit = useCallback((form) => {
+    setPending(prev => [...prev, form]);
+    nav("browse");
+    showToast("Perfume submitted for review!");
   }, [showToast]);
 
-  // Approve submission → update status in Supabase
-  const handleApprove = useCallback(async (idx) => {
+  const handleApprove = useCallback((idx) => {
     const p = pending[idx];
-    try {
-      await supabase.from('submissions').update({ status: 'approved' }).eq('id', p.id);
-      const newP = {
-        id: allPerfumes.length, name: p.name, brand: p.brand, year: p.year, gender: p.gender,
-        concentration: p.concentration, family: p.family, priceLow: p.price_low, priceHigh: p.price_high, rating: 4.0,
-        notes: [
-          ...(p.top_notes || "").split(",").map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: "top", strength: 75 })),
-          ...(p.heart_notes || "").split(",").map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: "heart", strength: 65 })),
-          ...(p.base_notes || "").split(",").map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: "base", strength: 60 })),
-        ],
-        accords: (p.accords || "").split(",").map(a => a.trim()).filter(Boolean).map((a, i) => ({ name: a, strength: 90 - i * 15 })),
-      };
-      setAllPerfumes(prev => [...prev, newP]);
-      setPending(prev => prev.filter((_, i) => i !== idx));
-      showToast(`${p.name} approved`);
-    } catch (e) { console.error('Approve error:', e); }
+    const newP = {
+      id: allPerfumes.length, name: p.name, brand: p.brand, year: p.year, gender: p.gender,
+      concentration: p.concentration, family: p.family, priceLow: p.priceLow, priceHigh: p.priceHigh, rating: 4.0,
+      notes: [
+        ...p.topNotes.split(",").map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: "top", strength: 75 })),
+        ...p.heartNotes.split(",").map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: "heart", strength: 65 })),
+        ...p.baseNotes.split(",").map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: "base", strength: 60 })),
+      ],
+      accords: p.accords.split(",").map(a => a.trim()).filter(Boolean).map((a, i) => ({ name: a, strength: 90 - i * 15 })),
+    };
+    setAllPerfumes(prev => [...prev, newP]);
+    setPending(prev => prev.filter((_, i) => i !== idx));
+    showToast(`"${p.name}" approved and added!`);
   }, [pending, allPerfumes, showToast]);
 
-  // Reject submission
-  const handleReject = useCallback(async (idx) => {
-    const p = pending[idx];
-    try {
-      await supabase.from('submissions').update({ status: 'rejected' }).eq('id', p.id);
-      setPending(prev => prev.filter((_, i) => i !== idx));
-      showToast("Submission rejected");
-    } catch (e) { console.error('Reject error:', e); }
-  }, [pending, showToast]);
+  const handleReject = useCallback((idx) => {
+    setPending(prev => prev.filter((_, i) => i !== idx));
+    showToast("Submission rejected.");
+  }, [showToast]);
 
-  // Submit review → Supabase
-  const submitReview = useCallback(async () => {
-    if (!newReview.title || !newReview.body || !newReview.perfume) return;
-    try {
-      const { data, error } = await supabase.from('reviews').insert({
-        user_name: newReview.name || "Anonymous",
-        perfume_name: newReview.perfume,
-        rating: newReview.rating,
-        title: newReview.title,
-        body: newReview.body,
-      }).select();
-      if (error) throw error;
-      if (data && data[0]) {
-        setUserReviews(prev => [{ user: data[0].user_name, rating: data[0].rating, perfume: data[0].perfume_name, title: data[0].title, body: data[0].body, date: "Just now", helpful: 0, id: data[0].id }, ...prev]);
-      }
-      setNewReview({ name: "", rating: 5, title: "", body: "", perfume: "" });
-      setShowWriteReview(false);
-      showToast("Review published!");
-    } catch (e) {
-      console.error('Review error:', e);
-      showToast("Error publishing review");
-    }
-  }, [newReview, showToast]);
-
-  // Submit vote → Supabase
-  const submitVote = useCallback(async (perfumeName, voteType, voteValue) => {
-    const voteKey = `${perfumeName}:${voteType}:${voteValue}`;
-    if (voted[voteKey]) return;
-    try {
-      await supabase.from('votes').insert({ perfume_name: perfumeName, vote_type: voteType, vote_value: voteValue });
-      setVoted(prev => ({ ...prev, [voteKey]: true }));
-      setDbVotes(prev => {
-        const key = `${perfumeName}:${voteType}`;
-        const existing = prev[key] || {};
-        return { ...prev, [key]: { ...existing, [voteValue]: (existing[voteValue] || 0) + 1 } };
-      });
-      showToast(`Voted ${voteValue} for ${perfumeName}`);
-    } catch (e) { console.error('Vote error:', e); }
-  }, [voted, showToast]);
-
-  // Helpful vote on review → Supabase
-  const toggleHelpful = useCallback(async (reviewId, currentCount) => {
-    const key = `helpful_${reviewId}`;
-    if (voted[key]) return;
-    try {
-      await supabase.from('reviews').update({ helpful: (currentCount || 0) + 1 }).eq('id', reviewId);
-      setVoted(prev => ({ ...prev, [key]: true }));
-      setUserReviews(prev => prev.map(r => r.id === reviewId ? { ...r, helpful: (r.helpful || 0) + 1 } : r));
-      showToast("Marked as helpful");
-    } catch (e) { console.error('Helpful error:', e); }
-  }, [voted, showToast]);
-
+  // Derived data
   const brands = useMemo(() => {
     const m = {};
     allPerfumes.forEach(p => {
@@ -392,10 +269,10 @@ export default function Home() {
       if (familyFilter !== "all" && p.family !== familyFilter) return false;
       if (genderFilter !== "all" && p.gender !== genderFilter) return false;
       if (typeFilter !== "all" && (BRAND_TYPES[p.brand] || "") !== typeFilter) return false;
-      if (priceFilter === "under200" && p.priceLow >= 200) return false;
-      if (priceFilter === "200to550" && (p.priceLow < 200 || p.priceLow >= 550)) return false;
-      if (priceFilter === "550to1100" && (p.priceLow < 550 || p.priceLow >= 1100)) return false;
-      if (priceFilter === "over1100" && p.priceLow < 1100) return false;
+      if (priceFilter === "under50" && p.priceLow >= 50) return false;
+      if (priceFilter === "50to150" && (p.priceLow < 50 || p.priceLow >= 150)) return false;
+      if (priceFilter === "150to300" && (p.priceLow < 150 || p.priceLow >= 300)) return false;
+      if (priceFilter === "over300" && p.priceLow < 300) return false;
       return true;
     });
     if (sortBy === "popular") r.sort((a, b) => b.rating - a.rating);
@@ -412,37 +289,32 @@ export default function Home() {
   const openBrand = (name) => { setBrandView(brands.find(b => b.name === name)); setView("brand"); scrollTop(); };
   const openNote = (name) => { setNoteView(allNotes.find(n => n.name === name)); setView("note_detail"); scrollTop(); };
 
-  const selClass = "text-xs uppercase tracking-widest font-medium cursor-pointer transition-colors px-3 py-2 border";
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-brand-cream font-body">
       {/* TOAST */}
-      {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-ink text-paper px-8 py-3.5 text-sm font-medium z-50 animate-slide-up max-w-[90%] text-center tracking-wide">{toast}</div>}
+      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-xl text-sm font-medium z-50 animate-slide-up shadow-2xl max-w-[90%] text-center">{toast}</div>}
 
       {/* NAV */}
-      <nav className="border-b border-faint sticky top-0 z-40 bg-paper/95 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
-          <div onClick={() => nav("browse")} className="cursor-pointer select-none">
-            <span className="font-serif text-2xl tracking-tight">The </span>
-            <span className="font-serif text-2xl italic" style={{ color: '#9B8EC4' }}>Dry</span>
-            <span className="font-serif text-2xl tracking-tight"> Down</span>
+      <nav className="bg-white border-b border-gray-200 px-5 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto flex items-center justify-between h-13 flex-wrap gap-2 py-2">
+          <div onClick={() => nav("browse")} className="cursor-pointer flex items-baseline gap-0.5">
+            <span className="font-display text-xl font-bold text-gray-900">The</span>
+            <span className="font-display text-xl font-normal text-brand-gold">Dry</span>
+            <span className="font-display text-xl font-bold text-gray-900">Down</span>
           </div>
-          <div className="flex items-center gap-6">
-            {[["browse", "Directory"], ["reviews", "Reviews"], ["brands", "Brands"], ["notes", "Notes"]].map(([id, label]) => (
-              <button key={id} onClick={() => nav(id)}
-                className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === id || (view === "detail" && id === "browse") || (view === "brand" && id === "brands") || (view === "note_detail" && id === "notes")) ? "text-ink" : "text-stone hover:text-ink"}`}>
-                {label}
-              </button>
+          <div className="flex gap-1 items-center flex-wrap">
+            {[["browse", "Perfumes"], ["reviews", "Reviews"], ["brands", "Brands"], ["notes", "Notes"]].map(([id, label]) => (
+              <button key={id} onClick={() => nav(id)} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${(view === id || (view === "detail" && id === "browse") || (view === "brand" && id === "brands") || (view === "note_detail" && id === "notes")) ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-100"}`}>{label}</button>
             ))}
-            <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
-            <button onClick={() => nav("admin")} className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors relative">
-              Admin{pending.length > 0 && <span className="absolute -top-1 -right-3 bg-accent text-paper text-[9px] font-bold w-4 h-4 flex items-center justify-center">{pending.length}</span>}
+            <button onClick={() => nav("submit")} className="px-3 py-1.5 rounded-md text-sm font-semibold bg-brand-gold text-white hover:opacity-90 ml-1">+ Add Perfume</button>
+            <button onClick={() => nav("admin")} className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-gray-300 text-gray-500 hover:bg-gray-50 relative">
+              Admin{pending.length > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{pending.length}</span>}
             </button>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 py-8 pb-24">
+      <main className="max-w-6xl mx-auto px-5 py-5 pb-20">
 
         {/* SUBMIT */}
         {view === "submit" && <SubmitForm onSubmit={handleSubmit} onCancel={() => nav("browse")} />}
@@ -450,47 +322,36 @@ export default function Home() {
         {/* ADMIN */}
         {view === "admin" && <AdminPanel pending={pending} onApprove={handleApprove} onReject={handleReject} onClose={() => nav("browse")} />}
 
-        {/* ═══ BROWSE ═══ */}
+        {/* BROWSE */}
         {view === "browse" && (
-          <div className="animate-fade-up">
-            {/* Hero */}
-            <div className="mb-10 pt-4">
-              <h1 className="font-serif text-6xl leading-none tracking-tight mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Fragrance<br /><span className="italic" style={{ color: '#9B8EC4' }}>Directory</span>
-              </h1>
-              <p className="text-stone text-sm mt-4">{allPerfumes.length} fragrances · {brands.length} brands · {allNotes.length} notes</p>
+          <div>
+            <div className="mb-4">
+              <h1 className="font-display text-3xl font-semibold text-gray-900 mb-1">Perfume Directory</h1>
+              <p className="text-sm text-gray-500">{allPerfumes.length} fragrances · {brands.length} brands · {allNotes.length} notes</p>
             </div>
-
-            {/* Search */}
-            <div className="border-b border-ink pb-2 mb-6 flex items-center gap-3">
-              <span className="text-stone text-sm">Search</span>
-              <input value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="name, brand, note, accord..."
-                className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-faint" style={{ letterSpacing: '-0.01em' }} />
-              {query && <button onClick={() => setQuery("")} className="text-stone hover:text-ink text-sm transition-colors">Clear</button>}
+            <div className="bg-white border border-gray-200 rounded-lg px-3.5 py-2 flex items-center gap-2 mb-3">
+              <span className="text-gray-400">🔍</span>
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search perfumes, brands, notes..." className="border-none bg-transparent w-full text-sm focus:outline-none" />
+              {query && <button onClick={() => setQuery("")} className="w-5 h-5 rounded bg-gray-200 text-gray-500 text-xs flex items-center justify-center hover:bg-gray-300">×</button>}
             </div>
-
-            {/* Filters */}
-            <div className="flex gap-2 flex-wrap mb-8">
-              {[[familyFilter, setFamilyFilter, [["all", "All"], ...families.map(f => [f, f])]], [genderFilter, setGenderFilter, [["all", "All"], ["Women", "Women"], ["Men", "Men"], ["Unisex", "Unisex"]]], [typeFilter, setTypeFilter, [["all", "Type"], ["Designer", "Designer"], ["Niche", "Niche"], ["Arabic", "Arabic"], ["Indie", "Indie"], ["Affordable", "Affordable"], ["Celebrity", "Celebrity"]]], [priceFilter, setPriceFilter, [["all", "Price"], ["under200", "<AED 200"], ["200to550", "AED 200–550"], ["550to1100", "AED 550–1,100"], ["over1100", "AED 1,100+"]]], [sortBy, setSortBy, [["popular", "Top Rated"], ["newest", "Newest"], ["price_low", "Price ↑"], ["price_high", "Price ↓"], ["name", "A–Z"]]]].map(([val, setter, opts], i) => (
-                <select key={i} value={val} onChange={e => setter(e.target.value)}
-                  className="text-xs uppercase tracking-widest font-medium cursor-pointer bg-transparent border border-faint px-3 py-2 text-ink focus:outline-none focus:border-ink transition-colors" style={{ WebkitAppearance: 'none', MozAppearance: 'none', paddingRight: 24, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238C8378'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
+            <div className="flex gap-1.5 flex-wrap mb-3.5">
+              {[[familyFilter, setFamilyFilter, [["all", "All Families"], ...families.map(f => [f, f])]], [genderFilter, setGenderFilter, [["all", "All"], ["Women", "Women"], ["Men", "Men"], ["Unisex", "Unisex"]]], [typeFilter, setTypeFilter, [["all", "All Types"], ["Designer", "Designer"], ["Niche", "Niche"], ["Arabic", "Arabic"], ["Indie", "Indie"], ["Affordable", "Affordable"], ["Celebrity", "Celebrity"]]], [priceFilter, setPriceFilter, [["all", "Any Price"], ["under50", "Under $50"], ["50to150", "$50–150"], ["150to300", "$150–300"], ["over300", "$300+"]]], [sortBy, setSortBy, [["popular", "Top Rated"], ["newest", "Newest"], ["price_low", "Price ↑"], ["price_high", "Price ↓"], ["name", "A→Z"]]]].map(([val, setter, opts], i) => (
+                <select key={i} value={val} onChange={e => setter(e.target.value)} className="px-2.5 py-1 rounded-md border border-gray-300 text-xs text-gray-700 bg-white cursor-pointer focus:outline-none">
                   {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               ))}
-              <span className="text-xs text-stone self-center ml-2">{filtered.length} results</span>
+              <span className="text-xs text-gray-400 self-center">{filtered.length} results</span>
             </div>
-
-            {/* List */}
-            <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} onClick={() => openPerfume(p)} />)}
             </div>
-            {filtered.length === 0 && <div className="py-20 text-center text-stone font-serif text-2xl italic">No results</div>}
+            {filtered.length === 0 && <div className="text-center py-16 text-gray-400">No perfumes match your filters</div>}
           </div>
         )}
 
-        {/* ═══ DETAIL ═══ */}
+        {/* DETAIL */}
         {view === "detail" && selected && (() => {
+          const fc = FAMILY_COLORS[selected.family] || "#6B6560";
           const bt = BRAND_TYPES[selected.brand];
           const similar = getSimilar(selected);
           const grouped = { top: [], heart: [], base: [] };
@@ -500,95 +361,76 @@ export default function Home() {
 
           return (
             <div className="animate-fade-up">
-              <button onClick={() => nav("browse")} className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block">← Back to Directory</button>
-
-              {/* Hero header */}
-              <div className="mb-12">
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  <Tag color={FAMILY_COLORS[selected.family]}>{selected.family}</Tag>
-                  <Tag>{selected.concentration}</Tag>
-                  <Tag>{selected.gender}</Tag>
-                  {bt && <Tag color={TYPE_COLORS[bt]}>{bt}</Tag>}
-                  <Tag>{selected.year}</Tag>
-                </div>
-                <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{selected.name}</h1>
-                <div className="flex items-center gap-4 mt-3">
-                  <span onClick={() => openBrand(selected.brand)} className="text-lg text-stone cursor-pointer hover:text-ink transition-colors" style={{ borderBottom: '1px solid #D8D0C8' }}>{selected.brand}</span>
-                  <span className="text-stone">·</span>
-                  <span className="font-serif text-2xl">AED {selected.priceLow}{selected.priceHigh !== selected.priceLow && `–${selected.priceHigh}`}</span>
-                  <span className="text-stone">·</span>
-                  <Stars value={selected.rating} size={16} />
-                </div>
-              </div>
-
-              {/* Two-column layout */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
-                {/* LEFT: Accords */}
-                <div>
-                  <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6 pb-2 border-b border-faint">Main Accords</h2>
-                  {selected.accords.map(a => {
-                    const ac = ACCORD_COLORS[a.name] || `hsl(${a.name.length * 37 % 360},40%,45%)`;
-                    return (
-                      <div key={a.name} className="flex items-center gap-3 mb-3">
-                        <div className="w-20 text-xs text-stone text-right capitalize flex-shrink-0">{a.name}</div>
-                        <div className="flex-1 h-2 bg-cream overflow-hidden">
-                          <div className="h-full bar-fill" style={{ width: `${a.strength}%`, background: ac }} />
-                        </div>
-                      </div>
-                    );
-                  })}
+              <button onClick={() => nav("browse")} className="border border-gray-300 rounded-md px-3.5 py-1.5 text-sm text-gray-500 hover:bg-gray-50 mb-4">← Back</button>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                {/* Header */}
+                <div className="p-7 flex gap-6 items-start flex-wrap" style={{ background: fc + "0C", borderBottom: `1px solid ${fc}15` }}>
+                  <Bottle family={selected.family} size={64} />
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="text-xs font-bold tracking-widest uppercase mb-1.5" style={{ color: fc }}>{selected.family} · {selected.concentration} · {selected.year}</div>
+                    <h1 className="font-display text-3xl font-semibold text-gray-900 leading-tight">{selected.name}</h1>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span onClick={() => openBrand(selected.brand)} className="text-base text-gray-600 cursor-pointer border-b border-dashed border-gray-400">{selected.brand}</span>
+                      {bt && <Badge text={bt} color={TYPE_COLORS[bt]} bg={TYPE_COLORS[bt] + "15"} />}
+                      <Badge text={selected.gender} />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold">${selected.priceLow}{selected.priceHigh !== selected.priceLow && `–$${selected.priceHigh}`}</div>
+                    <Stars value={selected.rating} size={16} />
+                  </div>
                 </div>
 
-                {/* RIGHT: Notes */}
-                <div>
-                  <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6 pb-2 border-b border-faint">Fragrance Notes</h2>
-                  {["top", "heart", "base"].map(pos => grouped[pos].length > 0 && (
-                    <div key={pos} className="mb-5">
-                      <div className="text-xs uppercase tracking-widest mb-3 font-medium" style={{ color: NOTE_COLORS[pos] }}>
-                        {NOTE_LABELS[pos]}
-                      </div>
-                      {grouped[pos].map(n => {
-                        const nc = NOTE_COLORS_MAP[n.name] || NOTE_COLORS[pos];
+                <div className="p-7">
+                  {/* Accords FIRST — the overall vibe */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-4">Main Accords</h2>
+                    <div className="max-w-md">
+                      {selected.accords.map(a => {
+                        const ac = { sweet:"#FF0000", warm:"#FF8C00", "warm spicy":"#D2691E", woody:"#8B4513", floral:"#FF1493", fruity:"#FF6347", citrus:"#FFFF00", fresh:"#228B22", musky:"#C0C0C0", powdery:"#DDA0DD", rose:"#FF1493", oud:"#4A2810", amber:"#DAA520", vanilla:"#FFD700", coffee:"#4A2810", leather:"#808080", tobacco:"#8B6040", boozy:"#B8860B", gourmand:"#D2691E", coconut:"#F5E6C8", chocolate:"#6B3410", smoky:"#808080", incense:"#A0522D", clean:"#4682B4", aquatic:"#4682B4", green:"#228B22", salty:"#4682B4", honey:"#FFD700", creamy:"#FFFACD", earthy:"#8B6040", "skin scent":"#D2B48C", dark:"#4A2810", balsamic:"#A0522D", "white floral":"#FFFFFF", "fresh spicy":"#32CD32", cherry:"#DC143C", patchouli:"#556B2F", sandalwood:"#D2B48C", tea:"#228B22", tropical:"#FFA500", berry:"#DC143C", almond:"#D2B48C", iris:"#DDA0DD", fig:"#8B6040", saffron:"#FF8C00", cinnamon:"#D2691E", tuberose:"#FFFFFF", lavender:"#9370DB", apple:"#32CD32", pineapple:"#FFD700", peach:"#FFA07A", plum:"#8B008B", solar:"#FFA500", mineral:"#A9A9A9", resinous:"#A0522D", animalic:"#8B6040", "warm":"#FF8C00" }[a.name] || `hsl(${a.name.length * 37 % 360},60%,50%)`;
                         return (
-                          <div key={n.name} className="flex items-center gap-3 mb-2">
-                            <div className="w-20 text-xs text-stone text-right truncate flex-shrink-0">{n.name}</div>
-                            <div className="flex-1 h-2 bg-cream overflow-hidden">
-                              <div className="h-full bar-fill" style={{ width: `${n.strength}%`, background: nc, border: nc === '#FFFFFF' || nc === '#F2F0E8' ? '1px solid #ddd' : 'none' }} />
+                          <div key={a.name} className="flex items-center gap-2 mb-2">
+                            <div className="w-24 text-sm text-gray-600 font-medium text-right flex-shrink-0 capitalize">{a.name}</div>
+                            <div className="flex-1 h-3.5 rounded bg-gray-100 overflow-hidden">
+                              <div className="h-full rounded" style={{ width: `${a.strength}%`, background: ac, border: ac === '#FFFFFF' ? '0.5px solid #ddd' : 'none' }} />
                             </div>
+                            <div className="w-8 text-xs text-gray-500 text-right font-medium">{a.strength}%</div>
                           </div>
                         );
                       })}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Community Data — grid */}
-              <div className="border-t border-faint pt-10 mb-12">
-                <h2 className="font-serif text-3xl mb-8">Community</h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-                  {/* Rating */}
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Rating</div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-serif text-5xl">{selected.rating}</span>
-                      <span className="text-stone text-sm">/ 5</span>
-                    </div>
-                    <div className="mt-2"><Stars value={selected.rating} size={16} /></div>
-                    <div className="text-xs text-stone mt-2">{120 + (selected.id * 17) % 380} ratings</div>
-                    <div className="mt-4 flex items-center gap-2">
-                      <span className="text-xs text-stone">Rate:</span>
-                      {[1,2,3,4,5].map(s => (
-                        <span key={s} onClick={() => showToast(`Rated ${selected.name} ${s}/5`)}
-                          className="cursor-pointer text-lg hover:scale-110 transition-transform" style={{ color: "#9B8EC4" }}>★</span>
+                  {/* Notes SECOND — the detailed breakdown */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-4">Fragrance Notes</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {["top", "heart", "base"].map(pos => grouped[pos].length > 0 && (
+                        <div key={pos}>
+                          <div className="text-xs font-bold tracking-widest uppercase mb-2.5 flex items-center gap-1.5" style={{ color: NOTE_COLORS[pos] }}>
+                            <div className="w-3 h-0.5 rounded" style={{ background: NOTE_COLORS[pos] }} />{NOTE_LABELS[pos]}
+                          </div>
+                          {grouped[pos].map(n => {
+                            const nc = NOTE_COLORS_MAP[n.name] || NOTE_COLORS[pos];
+                            return (
+                              <div key={n.name} className="flex items-center gap-2 mb-2">
+                                <div className="w-24 text-sm text-right font-medium text-gray-700 truncate flex-shrink-0">{n.name}</div>
+                                <div className="flex-1 h-4 rounded bg-gray-100 overflow-hidden min-w-[60px]">
+                                  <div className="h-full rounded" style={{ width: `${n.strength}%`, background: nc, border: nc === '#FFFFFF' || nc === '#F2F0E8' ? '0.5px solid #ddd' : 'none' }} />
+                                </div>
+                                <div className="w-8 text-xs text-gray-500 text-right font-medium">{n.strength}%</div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Gender */}
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Gender Leaning</div>
+                  {/* Gender Vote Bar */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-3">Gender Leaning</h2>
+                    <p className="text-xs text-gray-400 mb-3">How does the community feel this wears?</p>
                     {(() => {
                       const votes = selected.genderVotes || { feminine: 40, masculine: 20, unisex: 40 };
                       const total = votes.feminine + votes.masculine + votes.unisex;
@@ -597,211 +439,336 @@ export default function Home() {
                       const uPct = 100 - fPct - mPct;
                       return (
                         <div>
-                          <div className="flex overflow-hidden h-2 mb-3">
-                            <div style={{ width: `${fPct}%`, background: '#A0657B' }} />
-                            <div style={{ width: `${uPct}%`, background: '#C4A882' }} />
-                            <div style={{ width: `${mPct}%`, background: '#4A7090' }} />
+                          <div className="flex rounded-lg overflow-hidden h-10 mb-2" style={{ border: "1px solid #edebe8" }}>
+                            <div className="flex items-center justify-center text-xs font-semibold text-white transition-all" style={{ width: `${fPct}%`, background: "linear-gradient(135deg, #E8A4BA, #C4728F)", minWidth: fPct > 5 ? 40 : 0 }}>
+                              {fPct > 8 && `${fPct}%`}
+                            </div>
+                            <div className="flex items-center justify-center text-xs font-semibold transition-all" style={{ width: `${uPct}%`, background: "linear-gradient(135deg, #D4C5A9, #B8A88A)", color: "#6b5b3e", minWidth: uPct > 5 ? 40 : 0 }}>
+                              {uPct > 8 && `${uPct}%`}
+                            </div>
+                            <div className="flex items-center justify-center text-xs font-semibold text-white transition-all" style={{ width: `${mPct}%`, background: "linear-gradient(135deg, #8BAFC4, #4A7A9F)", minWidth: mPct > 5 ? 40 : 0 }}>
+                              {mPct > 8 && `${mPct}%`}
+                            </div>
                           </div>
-                          <div className="flex justify-between text-xs text-stone">
-                            <span>Feminine {fPct}%</span>
-                            <span>Unisex {uPct}%</span>
-                            <span>Masculine {mPct}%</span>
+                          <div className="flex justify-between text-xs mb-3">
+                            <span style={{ color: "#C4728F" }}>♀ Feminine ({fPct}%)</span>
+                            <span style={{ color: "#9C8B70" }}>◎ Unisex ({uPct}%)</span>
+                            <span style={{ color: "#4A7A9F" }}>♂ Masculine ({mPct}%)</span>
                           </div>
-                          <div className="flex gap-2 mt-4">
-                            {[["Feminine", "#A0657B"], ["Unisex", "#C4A882"], ["Masculine", "#4A7090"]].map(([label, color]) => (
-                              <button key={label} onClick={() => submitVote(selected.name, 'gender', label)}
-                                className="flex-1 py-2 text-xs font-medium border border-faint hover:border-stone transition-colors"
-                                style={{ color }}>{label}</button>
+                          <div className="flex gap-2">
+                            {[["♀ Feminine", "#C4728F"], ["◎ Unisex", "#9C8B70"], ["♂ Masculine", "#4A7A9F"]].map(([label, color]) => (
+                              <button key={label} onClick={() => showToast(`Voted "${label}" for ${selected.name}!`)}
+                                className="flex-1 py-2 rounded-lg text-xs font-semibold border transition-all hover:shadow-sm"
+                                style={{ borderColor: color + "40", color: color, background: color + "08" }}
+                                onMouseEnter={e => { e.currentTarget.style.background = color + "15"; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = color + "08"; }}>
+                                {label}
+                              </button>
                             ))}
                           </div>
+                          <div className="text-[10px] text-gray-300 mt-2 text-center">{total} votes</div>
                         </div>
                       );
                     })()}
                   </div>
 
-                  {/* Day/Night */}
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Day or Night</div>
+                  {/* ═══ COMMUNITY RATING ═══ */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-3">Community Rating</h2>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="text-5xl font-bold text-gray-900">{selected.rating}</div>
+                      <div>
+                        <Stars value={selected.rating} size={20} />
+                        <div className="text-xs text-gray-400 mt-1">{120 + (selected.id * 17) % 380} ratings</div>
+                      </div>
+                    </div>
+                    {/* Star breakdown */}
+                    <div className="max-w-sm">
+                      {[5,4,3,2,1].map(star => {
+                        const pcts = {5: 35 + (selected.id * 3) % 30, 4: 20 + (selected.id * 7) % 15, 3: 8 + (selected.id * 2) % 10, 2: 2 + (selected.id) % 5, 1: 1 + (selected.id * 5) % 3};
+                        return (
+                          <div key={star} className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-gray-500 w-4 text-right">{star}</span>
+                            <span className="text-xs text-yellow-500">★</span>
+                            <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                              <div className="h-full rounded-full bg-yellow-400" style={{ width: `${pcts[star]}%` }} />
+                            </div>
+                            <span className="text-[10px] text-gray-400 w-8 text-right">{pcts[star]}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Rate this perfume */}
+                    <div className="mt-4 flex items-center gap-3">
+                      <span className="text-sm text-gray-500">Rate this:</span>
+                      {[1,2,3,4,5].map(s => (
+                        <span key={s} onClick={() => showToast(`You rated ${selected.name} ${s}/5 stars!`)}
+                          className="cursor-pointer text-2xl hover:scale-110 transition-transform" style={{ color: "#D4A94B" }}>★</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ═══ DAY / NIGHT ═══ */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-3">Day or Night?</h2>
+                    <p className="text-xs text-gray-400 mb-3">When does the community wear this?</p>
                     {(() => {
                       const dayPct = 25 + (selected.id * 11 + selected.name.length * 3) % 50;
                       const nightPct = 100 - dayPct;
                       return (
                         <div>
-                          <div className="flex overflow-hidden h-2 mb-3">
-                            <div style={{ width: `${dayPct}%`, background: '#D4A060' }} />
-                            <div style={{ width: `${nightPct}%`, background: '#2C3E6B' }} />
+                          <div className="flex rounded-lg overflow-hidden h-10 mb-2" style={{ border: "1px solid #edebe8" }}>
+                            <div className="flex items-center justify-center text-xs font-semibold transition-all"
+                              style={{ width: `${dayPct}%`, background: "linear-gradient(135deg, #F9D976, #F39F86)", color: "#7B5B2E", minWidth: 40 }}>
+                              ☀️ {dayPct}%
+                            </div>
+                            <div className="flex items-center justify-center text-xs font-semibold text-white transition-all"
+                              style={{ width: `${nightPct}%`, background: "linear-gradient(135deg, #2C3E6B, #1a1a40)", minWidth: 40 }}>
+                              🌙 {nightPct}%
+                            </div>
                           </div>
-                          <div className="flex justify-between text-xs text-stone">
-                            <span>Day {dayPct}%</span>
-                            <span>Night {nightPct}%</span>
+                          <div className="flex justify-between text-xs mb-3">
+                            <span style={{ color: "#C4901E" }}>☀️ Daytime ({dayPct}%)</span>
+                            <span style={{ color: "#4A5580" }}>🌙 Nighttime ({nightPct}%)</span>
                           </div>
-                          <div className="flex gap-2 mt-4">
-                            {[["Day", "#D4A060"], ["Night", "#2C3E6B"]].map(([label, color]) => (
-                              <button key={label} onClick={() => submitVote(selected.name, 'daynight', label)}
-                                className="flex-1 py-2 text-xs font-medium border border-faint hover:border-stone transition-colors"
-                                style={{ color }}>{label}</button>
+                          <div className="flex gap-2">
+                            {[["☀️ Day", "#E8B84A"], ["🌙 Night", "#4A5580"]].map(([label, color]) => (
+                              <button key={label} onClick={() => showToast(`Voted "${label}" for ${selected.name}!`)}
+                                className="flex-1 py-2 rounded-lg text-xs font-semibold border transition-all hover:shadow-sm"
+                                style={{ borderColor: color + "40", color: color, background: color + "08" }}
+                                onMouseEnter={e => { e.currentTarget.style.background = color + "15"; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = color + "08"; }}>
+                                {label}
+                              </button>
                             ))}
                           </div>
                         </div>
                       );
                     })()}
                   </div>
-                </div>
 
-                {/* Seasons + Performance */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                  {/* Seasons */}
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Best Seasons</div>
+                  {/* ═══ SEASONALITY ═══ */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-3">Best Seasons</h2>
+                    <p className="text-xs text-gray-400 mb-3">When does this shine? Vote for all that apply.</p>
                     <div className="grid grid-cols-4 gap-3">
                       {[
-                        { name: "Spring", color: "#A0657B", pct: 30 + (selected.id * 7) % 60 },
-                        { name: "Summer", color: "#D4A060", pct: 20 + (selected.id * 13) % 55 },
-                        { name: "Autumn", color: "#C4956B", pct: 35 + (selected.id * 3) % 55 },
-                        { name: "Winter", color: "#4A7090", pct: 25 + (selected.id * 11) % 60 },
+                        { name: "Spring", icon: "🌸", color: "#E8A4BA", pct: 30 + (selected.id * 7) % 60 },
+                        { name: "Summer", icon: "☀️", color: "#E8B84A", pct: 20 + (selected.id * 13) % 55 },
+                        { name: "Autumn", icon: "🍂", color: "#C4901E", pct: 35 + (selected.id * 3) % 55 },
+                        { name: "Winter", icon: "❄️", color: "#6B8FC4", pct: 25 + (selected.id * 11) % 60 },
                       ].map(s => (
-                        <button key={s.name} onClick={() => submitVote(selected.name, 'season', s.name)}
-                          className="text-center py-3 border border-faint hover:border-stone transition-colors">
-                          <div className="text-xs font-medium mb-2" style={{ color: s.color }}>{s.name}</div>
-                          <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
-                            <div className="h-full" style={{ width: `${s.pct}%`, background: s.color }} />
+                        <button key={s.name} onClick={() => showToast(`Voted "${s.name}" for ${selected.name}!`)}
+                          className="flex flex-col items-center p-3 rounded-xl border transition-all hover:shadow-md"
+                          style={{ borderColor: s.pct > 50 ? s.color + "60" : "#edebe8", background: s.pct > 50 ? s.color + "08" : "#fff" }}>
+                          <span className="text-2xl mb-1">{s.icon}</span>
+                          <span className="text-xs font-semibold" style={{ color: s.color }}>{s.name}</span>
+                          <div className="w-full h-1.5 rounded-full bg-gray-100 mt-2 overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${s.pct}%`, background: s.color }} />
                           </div>
-                          <div className="text-[10px] text-stone mt-1">{s.pct}%</div>
+                          <span className="text-[10px] text-gray-400 mt-1">{s.pct}%</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Performance */}
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Performance</div>
-                    <div className="space-y-4">
-                      {[
-                        { label: "Sillage", levels: ["Intimate", "Moderate", "Strong", "Beast"], idx: (selected.id * 7 + selected.name.length) % 4 },
-                        { label: "Longevity", levels: ["2–4h", "4–6h", "6–10h", "10h+"], idx: (selected.id * 3 + selected.name.length * 2) % 4 },
-                      ].map(perf => (
-                        <div key={perf.label}>
-                          <div className="flex justify-between text-xs mb-2">
-                            <span className="text-stone">{perf.label}</span>
-                            <span className="font-medium">{perf.levels[perf.idx]}</span>
+                  {/* ═══ PERFORMANCE: SILLAGE + LONGEVITY ═══ */}
+                  <div className="mb-7">
+                    <h2 className="font-display text-xl font-semibold mb-3">Performance</h2>
+                    <p className="text-xs text-gray-400 mb-4">Community-rated projection and lasting power</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Sillage */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">💨</span>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800">Sillage</div>
+                            <div className="text-[10px] text-gray-400">How far does it project?</div>
                           </div>
+                        </div>
+                        {(() => {
+                          const levels = ["Intimate", "Moderate", "Strong", "Beast Mode"];
+                          const sillageIdx = (selected.id * 7 + selected.name.length) % 4;
+                          return (
+                            <div>
+                              <div className="flex gap-1 mb-2">
+                                {levels.map((l, i) => (
+                                  <div key={l} className="flex-1 h-3 rounded-full transition-all"
+                                    style={{ background: i <= sillageIdx ? "linear-gradient(90deg, #9C8B70, #D4C5A9)" : "#f0ede8" }} />
+                                ))}
+                              </div>
+                              <div className="text-xs font-semibold text-brand-gold text-center">{levels[sillageIdx]}</div>
+                              <div className="flex justify-between text-[9px] text-gray-300 mt-1">
+                                <span>Intimate</span><span>Beast Mode</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Longevity */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">⏱️</span>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800">Longevity</div>
+                            <div className="text-[10px] text-gray-400">How long does it last?</div>
+                          </div>
+                        </div>
+                        {(() => {
+                          const levels = ["1-2 hrs", "3-5 hrs", "6-8 hrs", "8-12 hrs", "12+ hrs"];
+                          const longevityIdx = (selected.id * 3 + selected.name.length * 2) % 5;
+                          const hours = [1.5, 4, 7, 10, 14][longevityIdx];
+                          return (
+                            <div>
+                              <div className="flex gap-1 mb-2">
+                                {levels.map((l, i) => (
+                                  <div key={l} className="flex-1 h-3 rounded-full transition-all"
+                                    style={{ background: i <= longevityIdx ? "linear-gradient(90deg, #7B6348, #B89B70)" : "#f0ede8" }} />
+                                ))}
+                              </div>
+                              <div className="text-xs font-semibold text-center" style={{ color: "#7B6348" }}>{levels[longevityIdx]}</div>
+                              <div className="flex justify-between text-[9px] text-gray-300 mt-1">
+                                <span>Short</span><span>Very Long</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Vote on performance */}
+                    <div className="mt-4 bg-white border border-gray-200 rounded-xl p-4">
+                      <div className="text-xs font-bold tracking-widest uppercase text-gray-500 mb-3">Rate Performance</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500 mb-1 block">Sillage</label>
                           <div className="flex gap-1">
-                            {perf.levels.map((l, i) => (
-                              <div key={l} className="flex-1 h-1.5 transition-all"
-                                style={{ background: i <= perf.idx ? '#9B8EC4' : '#EDE7DF' }} />
+                            {["Intimate", "Moderate", "Strong", "Beast"].map(l => (
+                              <button key={l} onClick={() => showToast(`Rated sillage "${l}" for ${selected.name}!`)}
+                                className="flex-1 py-1.5 rounded-md text-[10px] font-semibold border border-gray-200 text-gray-500 hover:bg-brand-gold hover:text-white hover:border-brand-gold transition-all">
+                                {l}
+                              </button>
                             ))}
                           </div>
                         </div>
-                      ))}
+                        <div>
+                          <label className="text-xs text-gray-500 mb-1 block">Longevity</label>
+                          <div className="flex gap-1">
+                            {["1-2h", "3-5h", "6-8h", "8-12h", "12h+"].map(l => (
+                              <button key={l} onClick={() => showToast(`Rated longevity "${l}" for ${selected.name}!`)}
+                                className="flex-1 py-1.5 rounded-md text-[10px] font-semibold border border-gray-200 text-gray-500 hover:bg-brand-gold hover:text-white hover:border-brand-gold transition-all">
+                                {l}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Where to Buy */}
-              <div className="border-t border-faint pt-10 mb-12">
-                <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Where to Buy</h2>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {RETAILERS.map(r => (
-                    <a key={r.name} href={r.url.replace("Q", encodeURIComponent(selected.name + " " + selected.brand))} target="_blank" rel="noopener noreferrer"
-                      className="text-center py-3 border border-faint hover:border-ink transition-colors">
-                      <div className="text-sm font-medium">{r.name}</div>
-                      <div className="text-[10px] text-stone mt-0.5">{r.tag}</div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              {/* Reviews for this perfume */}
-              {perfReviews.length > 0 && (
-                <div className="border-t border-faint pt-10 mb-12">
-                  <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Reviews</h2>
-                  {perfReviews.map((rv, i) => (
-                    <div key={i} className="border-b border-faint py-5">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user || "A")[0]}</div>
-                          <div><div className="text-sm font-medium">{rv.user}</div><div className="text-xs text-stone">{rv.date}</div></div>
-                        </div>
-                        <Stars value={rv.rating} size={12} />
-                      </div>
-                      <div className="text-sm font-medium mb-1">{rv.title}</div>
-                      <p className="text-sm text-stone leading-relaxed">{rv.body}</p>
+                  {/* Buy Panel */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-7">
+                    <div className="text-xs font-bold tracking-widest uppercase text-brand-gold mb-3">Where to Buy</div>
+                    <div className="flex flex-col gap-2">
+                      {RETAILERS.map(r => {
+                        const q = encodeURIComponent(`${selected.brand} ${selected.name}`);
+                        return (
+                          <a key={r.name} href={r.url.replace("Q", q)} target="_blank" rel="noopener noreferrer nofollow"
+                            className="flex items-center justify-between px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg no-underline text-gray-900 transition-all hover:shadow-sm"
+                            style={{ '--hover-color': r.color }}>
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-lg">{r.icon}</span>
+                              <div><div className="text-sm font-semibold">{r.name}</div><div className="text-xs text-gray-400">Shop {selected.brand}</div></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: r.color + "12", color: r.color }}>{r.tag}</span>
+                              <span className="text-gray-400">→</span>
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="text-[10px] text-gray-300 mt-2.5 text-center">The Dry Down may earn a commission from purchases</div>
+                  </div>
 
-              {/* Similar */}
-              <div className="border-t border-faint pt-10">
-                <h2 className="font-serif text-3xl mb-6">You Might Also Like</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-t border-faint">
-                  {similar.map(p => <PerfumeCard key={p.name + p.brand} perfume={p} onClick={() => openPerfume(p)} />)}
+                  {/* Reviews */}
+                  {perfReviews.length > 0 && (
+                    <div className="mb-7">
+                      <h2 className="font-display text-xl font-semibold mb-3">Reviews</h2>
+                      {perfReviews.slice(0, 3).map((rv, i) => (
+                        <div key={i} className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-100">
+                          <div className="flex justify-between mb-1"><span className="text-sm font-semibold">{rv.user}</span><Stars value={rv.rating} size={11} /></div>
+                          <div className="text-sm font-semibold text-gray-800 mb-0.5">{rv.title}</div>
+                          <div className="text-sm text-gray-600">{rv.body}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Similar */}
+                  <div>
+                    <h2 className="font-display text-xl font-semibold mb-3.5">You Might Also Like</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {similar.map(s => <PerfumeCard key={s.name + s.brand} perfume={s} onClick={() => { setSelected(s); scrollTop(); }} compact />)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           );
         })()}
 
-        {/* ═══ REVIEWS ═══ */}
+        {/* REVIEWS */}
         {view === "reviews" && (
-          <div className="animate-fade-up">
-            <div className="mb-8 pt-4">
-              <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Community<br /><span className="italic" style={{ color: '#9B8EC4' }}>Reviews</span>
-              </h1>
-            </div>
-            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-faint">
-              <button onClick={() => setShowWriteReview(!showWriteReview)} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
-              <div className="flex gap-2 ml-auto">
-                {[["helpful", "Most Helpful"], ["rating", "Top Rated"]].map(([v, l]) => (
-                  <button key={v} onClick={() => setReviewSort(v)}
-                    className={`text-xs uppercase tracking-widest font-medium px-3 py-2 border transition-colors ${reviewSort === v ? "border-ink text-ink" : "border-faint text-stone hover:border-stone"}`}>
-                    {l}
-                  </button>
-                ))}
+          <div>
+            <div className="flex justify-between items-end flex-wrap gap-3 mb-5">
+              <div>
+                <h1 className="font-display text-3xl font-semibold mb-1">Community Reviews</h1>
+                <p className="text-sm text-gray-500">{allReviews.length} reviews</p>
               </div>
+              <button onClick={() => setShowWriteReview(!showWriteReview)} className="px-4 py-2 rounded-md bg-brand-gold text-white text-sm font-semibold hover:opacity-90">
+                {showWriteReview ? "Cancel" : "Write Review"}
+              </button>
             </div>
             {showWriteReview && (
-              <div className="border-b border-faint pb-8 mb-6 animate-fade-up">
-                <div className="max-w-lg">
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <input value={newReview.name} onChange={e => setNewReview({ ...newReview, name: e.target.value })} placeholder="Your name" className="p-3 border border-faint bg-transparent text-sm focus:border-ink focus:outline-none" />
-                    <input value={newReview.perfume} onChange={e => setNewReview({ ...newReview, perfume: e.target.value })} placeholder="Perfume name" className="p-3 border border-faint bg-transparent text-sm focus:border-ink focus:outline-none" />
-                  </div>
-                  <div className="flex gap-1 mb-3 items-center">
-                    <span className="text-xs text-stone mr-2">Rating:</span>
-                    {[1, 2, 3, 4, 5].map(s => <span key={s} onClick={() => setNewReview({ ...newReview, rating: s })} className="cursor-pointer text-lg" style={{ color: s <= newReview.rating ? "#9B8EC4" : "#D8D0C8" }}>★</span>)}
-                  </div>
-                  <input value={newReview.title} onChange={e => setNewReview({ ...newReview, title: e.target.value })} placeholder="Review title" className="w-full p-3 border border-faint bg-transparent text-sm mb-3 focus:border-ink focus:outline-none" />
-                  <textarea value={newReview.body} onChange={e => setNewReview({ ...newReview, body: e.target.value })} placeholder="Your review..." rows={3} className="w-full p-3 border border-faint bg-transparent text-sm mb-3 resize-y focus:border-ink focus:outline-none" />
-                  <button onClick={() => {
-                    if (newReview.title && newReview.body && newReview.perfume) {
-                      setUserReviews(prev => [...prev, { user: newReview.name || "Anonymous", rating: newReview.rating, perfume: newReview.perfume, title: newReview.title, body: newReview.body, date: "Just now", helpful: 0 }]);
-                      setNewReview({ name: "", rating: 5, title: "", body: "", perfume: "" });
-                      setShowWriteReview(false);
-                      showToast("Review published");
-                    }
-                  }} className="px-6 py-2.5 text-sm font-medium bg-ink text-paper hover:opacity-80">Publish</button>
+              <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 animate-fade-up">
+                <h3 className="font-display text-lg font-semibold mb-3">Write a Review</h3>
+                <div className="grid grid-cols-2 gap-2.5 mb-2.5">
+                  <input value={newReview.name} onChange={e => setNewReview({ ...newReview, name: e.target.value })} placeholder="Your name" className="p-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:border-brand-gold" />
+                  <input value={newReview.perfume} onChange={e => setNewReview({ ...newReview, perfume: e.target.value })} placeholder="Perfume name" className="p-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:border-brand-gold" />
                 </div>
+                <div className="flex gap-2 mb-2.5 items-center">
+                  <span className="text-sm text-gray-500">Rating:</span>
+                  {[1, 2, 3, 4, 5].map(s => <span key={s} onClick={() => setNewReview({ ...newReview, rating: s })} className="cursor-pointer text-xl" style={{ color: s <= newReview.rating ? "#D4A94B" : "#ddd" }}>★</span>)}
+                </div>
+                <input value={newReview.title} onChange={e => setNewReview({ ...newReview, title: e.target.value })} placeholder="Review title" className="w-full p-2 rounded-md border border-gray-300 text-sm mb-2.5 focus:outline-none focus:border-brand-gold" />
+                <textarea value={newReview.body} onChange={e => setNewReview({ ...newReview, body: e.target.value })} placeholder="Your review..." rows={3} className="w-full p-2 rounded-md border border-gray-300 text-sm mb-2.5 resize-y focus:outline-none focus:border-brand-gold" />
+                <button onClick={() => {
+                  if (newReview.title && newReview.body && newReview.perfume) {
+                    setUserReviews(prev => [...prev, { user: newReview.name || "Anonymous", rating: newReview.rating, perfume: newReview.perfume, title: newReview.title, body: newReview.body, date: "Just now", helpful: 0 }]);
+                    setNewReview({ name: "", rating: 5, title: "", body: "", perfume: "" });
+                    setShowWriteReview(false);
+                    showToast("Review published!");
+                  }
+                }} className="px-5 py-2 rounded-md bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800">Submit</button>
               </div>
             )}
-            <div>
+            <div className="flex flex-col gap-2.5">
               {allReviews.map((rv, i) => (
-                <div key={i} className="border-b border-faint py-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user || "A")[0]}</div>
-                      <div><div className="text-sm font-medium">{rv.user}</div><div className="text-xs text-stone">{rv.date}</div></div>
+                <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-3.5">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex gap-2 items-center">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-display text-sm font-semibold text-gray-500">{(rv.user || "A")[0]}</div>
+                      <div><div className="text-sm font-semibold">{rv.user}</div><div className="text-xs text-gray-400">{rv.date}</div></div>
                     </div>
                     <Stars value={rv.rating} size={12} />
                   </div>
-                  <Tag style={{ marginBottom: 8 }}>{rv.perfume}</Tag>
-                  <div className="text-sm font-medium mt-2 mb-1">{rv.title}</div>
-                  <p className="text-sm text-stone leading-relaxed mb-3">{rv.body}</p>
-                  <button onClick={() => setVoted(p => ({ ...p, [i]: !p[i] }))}
-                    className={`text-xs border border-faint px-3 py-1.5 transition-colors ${voted[i] ? "border-accent text-accent" : "text-stone hover:border-stone"}`}>
-                    Helpful ({voted[i] ? (rv.helpful || 0) + 1 : rv.helpful || 0})
+                  <div className="inline-block px-2 py-0.5 rounded bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-700 mb-1">{rv.perfume}</div>
+                  <div className="text-sm font-semibold mb-0.5">{rv.title}</div>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-2">{rv.body}</p>
+                  <button onClick={() => setVoted(p => ({ ...p, [i]: !p[i] }))} className={`border border-gray-200 rounded-md px-2.5 py-1 text-xs cursor-pointer ${voted[i] ? "bg-gray-100 text-brand-gold" : "text-gray-400"}`}>
+                    👍 ({voted[i] ? (rv.helpful || 0) + 1 : rv.helpful || 0})
                   </button>
                 </div>
               ))}
@@ -809,28 +776,24 @@ export default function Home() {
           </div>
         )}
 
-        {/* ═══ BRANDS ═══ */}
+        {/* BRANDS */}
         {view === "brands" && (
-          <div className="animate-fade-up">
-            <div className="mb-10 pt-4">
-              <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Brand<br /><span className="italic" style={{ color: '#9B8EC4' }}>Directory</span>
-              </h1>
-            </div>
+          <div>
+            <h1 className="font-display text-3xl font-semibold mb-5">Brand Directory</h1>
             {["Arabic", "Niche", "Designer", "Indie", "Affordable", "Celebrity"].map(type => {
               const bs = brands.filter(b => b.type === type);
               if (!bs.length) return null;
               return (
-                <div key={type} className="mb-10">
-                  <div className="flex items-center gap-3 mb-4 pb-2 border-b border-faint">
-                    <h2 className="text-xs uppercase tracking-widest font-medium" style={{ color: TYPE_COLORS[type] || "#8C8378" }}>{type}</h2>
-                    <span className="text-xs text-stone">{bs.length} brands</span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-faint">
+                <div key={type} className="mb-6">
+                  <h2 className="text-sm font-semibold mb-2.5" style={{ color: TYPE_COLORS[type] || "#6b6560" }}>
+                    <Badge text={type} color={TYPE_COLORS[type]} bg={(TYPE_COLORS[type] || "#6b6560") + "15"} />
+                    <span className="text-xs text-gray-400 font-normal ml-2">{bs.length} brands</span>
+                  </h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                     {bs.map(b => (
-                      <div key={b.name} onClick={() => openBrand(b.name)} className="bg-paper p-4 cursor-pointer hover:bg-cream transition-colors">
-                        <div className="text-sm font-medium">{b.name}</div>
-                        <div className="text-xs text-stone mt-1">{b.count} fragrances</div>
+                      <div key={b.name} onClick={() => openBrand(b.name)} className="bg-white border border-gray-200 rounded-lg p-3.5 cursor-pointer hover:shadow-sm transition-shadow">
+                        <div className="font-display text-sm font-semibold">{b.name}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{b.count} perfumes</div>
                       </div>
                     ))}
                   </div>
@@ -841,34 +804,27 @@ export default function Home() {
         )}
         {view === "brand" && brandView && (
           <div className="animate-fade-up">
-            <button onClick={() => nav("brands")} className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block">← All Brands</button>
-            <div className="mb-8">
-              <h1 className="font-serif text-4xl mb-2">{brandView.name}</h1>
-              <div className="flex items-center gap-3">
-                <Tag>{brandView.type}</Tag>
-                <span className="text-sm text-stone">{brandView.count} fragrances</span>
-              </div>
+            <button onClick={() => nav("brands")} className="border border-gray-300 rounded-md px-3.5 py-1.5 text-sm text-gray-500 hover:bg-gray-50 mb-4">← All Brands</button>
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+              <h1 className="font-display text-2xl font-semibold inline">{brandView.name}</h1>
+              <span className="ml-2"><Badge text={brandView.type} color={TYPE_COLORS[brandView.type]} bg={(TYPE_COLORS[brandView.type] || "#6b6560") + "15"} /></span>
+              <div className="text-sm text-gray-500 mt-1">{brandView.count} perfumes</div>
             </div>
-            <div className="border-t border-faint">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {brandView.perfumes.map(p => <PerfumeCard key={p.name} perfume={p} onClick={() => openPerfume(p)} />)}
             </div>
           </div>
         )}
 
-        {/* ═══ NOTES ═══ */}
+        {/* NOTES */}
         {view === "notes" && (
-          <div className="animate-fade-up">
-            <div className="mb-10 pt-4">
-              <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Notes<br /><span className="italic" style={{ color: '#9B8EC4' }}>Explorer</span>
-              </h1>
-              <p className="text-sm text-stone mt-3">{allNotes.length} unique notes</p>
-            </div>
+          <div>
+            <h1 className="font-display text-3xl font-semibold mb-1">Notes Explorer</h1>
+            <p className="text-sm text-gray-500 mb-5">{allNotes.length} unique notes</p>
             <div className="flex flex-wrap gap-1.5">
               {allNotes.map(n => (
-                <span key={n.name} onClick={() => openNote(n.name)}
-                  className="px-3 py-1.5 border border-faint text-sm cursor-pointer hover:border-ink hover:bg-cream transition-all">
-                  {n.name} <span className="text-xs text-stone">{n.count}</span>
+                <span key={n.name} onClick={() => openNote(n.name)} className="px-3.5 py-1.5 rounded-md bg-white border border-gray-200 text-sm text-gray-700 font-medium cursor-pointer hover:bg-gray-50 transition-colors">
+                  {n.name} <span className="text-xs text-gray-400">({n.count})</span>
                 </span>
               ))}
             </div>
@@ -876,53 +832,20 @@ export default function Home() {
         )}
         {view === "note_detail" && noteView && (
           <div className="animate-fade-up">
-            <button onClick={() => nav("notes")} className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block">← All Notes</button>
-            <div className="mb-8">
-              <h1 className="font-serif text-4xl mb-2">{noteView.name}</h1>
-              <p className="text-sm text-stone">Found in {noteView.count} fragrances</p>
+            <button onClick={() => nav("notes")} className="border border-gray-300 rounded-md px-3.5 py-1.5 text-sm text-gray-500 hover:bg-gray-50 mb-4">← All Notes</button>
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+              <h1 className="font-display text-2xl font-semibold">{noteView.name}</h1>
+              <div className="text-sm text-gray-500 mt-1">Found in {noteView.count} perfumes</div>
             </div>
-            <div className="border-t border-faint">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {allPerfumes.filter(p => p.notes.some(n => n.name === noteView.name)).map(p => <PerfumeCard key={p.name + p.brand} perfume={p} onClick={() => openPerfume(p)} />)}
             </div>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-lite px-6 py-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex justify-between items-start flex-wrap gap-6">
-            <div>
-              <div className="mb-3">
-                <span className="font-serif text-lg">the </span>
-                <span className="font-serif text-lg italic" style={{ color: '#9B8EC4' }}>dry</span>
-                <span className="font-serif text-lg"> down</span>
-              </div>
-              <p className="text-xs text-mid leading-relaxed max-w-xs">A fragrance directory built for the community. Discover notes, accords, and your next signature scent.</p>
-            </div>
-            <div className="flex gap-8">
-              <div>
-                <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Explore</div>
-                <div className="flex flex-col gap-1.5">
-                  <span onClick={() => nav("browse")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Directory</span>
-                  <span onClick={() => nav("brands")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Brands</span>
-                  <span onClick={() => nav("notes")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Notes</span>
-                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Community</div>
-                <div className="flex flex-col gap-1.5">
-                  <a href={SUGGEST_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-mid hover:text-ink transition-colors no-underline">Suggest a Perfume</a>
-                  <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-mid hover:text-ink transition-colors no-underline">Give Feedback</a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-6 border-t border-lite flex justify-between items-center">
-            <div className="text-xs text-mid">{allPerfumes.length} fragrances · {brands.length} brands · Dubai</div>
-            <div className="text-xs text-mid">© 2026 The Dry Down</div>
-          </div>
-        </div>
+      <footer className="border-t border-gray-200 px-5 py-4 text-center text-xs text-gray-400">
+        The Dry Down · {allPerfumes.length} perfumes · {brands.length} brands · {allNotes.length} notes · Dubai · © 2026
       </footer>
     </div>
   );
