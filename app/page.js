@@ -240,15 +240,34 @@ export default function Home() {
     setIsAdmin(new URLSearchParams(window.location.search).get('admin') === 'true');
   }, []);
 
-  // Load reviews + pending submissions + votes from Supabase on mount
+  // Load perfumes + reviews + pending submissions + votes from Supabase on mount
   useEffect(() => {
     async function loadData() {
       try {
-        const [revRes, subRes, voteRes] = await Promise.all([
+        const [perfRes, revRes, subRes, voteRes] = await Promise.all([
+          supabase.from('perfumes').select('*').order('brand', { ascending: true }),
           supabase.from('reviews').select('*').order('created_at', { ascending: false }),
           supabase.from('submissions').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
           supabase.from('votes').select('*'),
         ]);
+        // Load perfumes from Supabase if available
+        if (perfRes.data && perfRes.data.length > 0) {
+          const loaded = perfRes.data.map((p, idx) => ({
+            id: p.id, name: p.name, brand: p.brand, year: p.year, gender: p.gender || 'Unisex',
+            concentration: p.concentration || 'EDP', family: p.family || '',
+            priceLow: p.price_low || 0, priceHigh: p.price_high || 0,
+            notes: [
+              ...(p.top_notes || '').split(',').map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: 'top', strength: 70 + (idx * 7 + n.length * 3) % 25 })),
+              ...(p.heart_notes || '').split(',').map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: 'heart', strength: 55 + (idx * 5 + n.length * 7) % 30 })),
+              ...(p.base_notes || '').split(',').map(n => n.trim()).filter(Boolean).map(n => ({ name: n, position: 'base', strength: 50 + (idx * 3 + n.length * 11) % 35 })),
+            ],
+            accords: (p.main_accords || '').split(',').map(a => a.trim()).filter(Boolean).map((a, i) => ({ name: a, strength: Math.max(30, 90 - i * 12 + (a.length * 3) % 8) })),
+            rating: Number(p.rating) || 4.0,
+            brandType: p.brand_type || 'Unknown',
+            genderVotes: { feminine: 30 + (idx * 13) % 40, masculine: 10 + (idx * 7) % 30, unisex: 20 + (idx * 11) % 40 },
+          }));
+          setAllPerfumes(loaded);
+        }
         if (revRes.data) setUserReviews(revRes.data.map(r => ({
           user: r.user_name, rating: r.rating, perfume: r.perfume_name,
           title: r.title, body: r.body, date: new Date(r.created_at).toLocaleDateString(), helpful: r.helpful || 0, id: r.id
@@ -376,7 +395,7 @@ export default function Home() {
   const brands = useMemo(() => {
     const m = {};
     allPerfumes.forEach(p => {
-      if (!m[p.brand]) m[p.brand] = { name: p.brand, type: BRAND_TYPES[p.brand] || "Unknown", count: 0, perfumes: [] };
+      if (!m[p.brand]) m[p.brand] = { name: p.brand, type: p.brandType || BRAND_TYPES[p.brand] || "Unknown", count: 0, perfumes: [] };
       m[p.brand].count++;
       m[p.brand].perfumes.push(p);
     });
@@ -396,7 +415,7 @@ export default function Home() {
       if (query) { const s = query.toLowerCase(); if (!(p.name.toLowerCase().includes(s) || p.brand.toLowerCase().includes(s) || p.notes.some(n => n.name.toLowerCase().includes(s)) || p.accords.some(a => a.name.toLowerCase().includes(s)))) return false; }
       if (familyFilter !== "all" && p.family !== familyFilter) return false;
       if (genderFilter !== "all" && p.gender !== genderFilter) return false;
-      if (typeFilter !== "all" && (BRAND_TYPES[p.brand] || "") !== typeFilter) return false;
+      if (typeFilter !== "all" && (p.brandType || BRAND_TYPES[p.brand] || "") !== typeFilter) return false;
       if (priceFilter === "under200" && p.priceLow >= 200) return false;
       if (priceFilter === "200to550" && (p.priceLow < 200 || p.priceLow >= 550)) return false;
       if (priceFilter === "550to1100" && (p.priceLow < 550 || p.priceLow >= 1100)) return false;
@@ -496,7 +515,7 @@ export default function Home() {
 
         {/* ═══ DETAIL ═══ */}
         {view === "detail" && selected && (() => {
-          const bt = BRAND_TYPES[selected.brand];
+          const bt = selected.brandType || BRAND_TYPES[selected.brand];
           const similar = getSimilar(selected);
           const grouped = { top: [], heart: [], base: [] };
           selected.notes.forEach(n => { if (grouped[n.position]) grouped[n.position].push(n); });
@@ -910,6 +929,8 @@ export default function Home() {
               <div>
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Community</div>
                 <div className="flex flex-col gap-1.5">
+                  <a href={SUGGEST_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-mid hover:text-ink transition-colors no-underline">Suggest a Perfume</a>
+                  <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-mid hover:text-ink transition-colors no-underline">Give Feedback</a>
                 </div>
               </div>
             </div>
