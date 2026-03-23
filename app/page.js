@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, BRAND_TYPES, NOTE_COLORS_MAP } from '../data/perfumes';
+import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, NOTE_COLORS_MAP } from '../data/perfumes';
 import { supabase } from '../lib/supabase';
 
 /* ═══ PALETTE ═══ */
@@ -90,6 +90,11 @@ function PerfumeCard({ perfume: p, onClick }) {
   return (
     <div onClick={onClick} className="cursor-pointer group transition-all" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8' }}>
       <div className="flex justify-between items-start gap-4">
+        {p.image_url && (
+          <div className="flex-shrink-0 w-14 h-14 rounded overflow-hidden bg-cream">
+            <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" loading="lazy" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <h3 className="font-serif text-xl leading-tight" style={{ letterSpacing: '-0.02em' }}>{p.name}</h3>
@@ -264,6 +269,7 @@ export default function Home() {
             accords: (p.main_accords || '').split(',').map(a => a.trim()).filter(Boolean).map((a, i) => ({ name: a, strength: Math.max(30, 90 - i * 12 + (a.length * 3) % 8) })),
             rating: Number(p.rating) || 4.0,
             brandType: p.brand_type || 'Unknown',
+            image_url: p.image_url || null,
             genderVotes: { feminine: 30 + (idx * 13) % 40, masculine: 10 + (idx * 7) % 30, unisex: 20 + (idx * 11) % 40 },
           }));
           setAllPerfumes(loaded);
@@ -395,7 +401,7 @@ export default function Home() {
   const brands = useMemo(() => {
     const m = {};
     allPerfumes.forEach(p => {
-      if (!m[p.brand]) m[p.brand] = { name: p.brand, type: p.brandType || BRAND_TYPES[p.brand] || "Unknown", count: 0, perfumes: [] };
+      if (!m[p.brand]) m[p.brand] = { name: p.brand, type: p.brandType || "Unknown", count: 0, perfumes: [] };
       m[p.brand].count++;
       m[p.brand].perfumes.push(p);
     });
@@ -415,7 +421,7 @@ export default function Home() {
       if (query) { const s = query.toLowerCase(); if (!(p.name.toLowerCase().includes(s) || p.brand.toLowerCase().includes(s) || p.notes.some(n => n.name.toLowerCase().includes(s)) || p.accords.some(a => a.name.toLowerCase().includes(s)))) return false; }
       if (familyFilter !== "all" && p.family !== familyFilter) return false;
       if (genderFilter !== "all" && p.gender !== genderFilter) return false;
-      if (typeFilter !== "all" && (p.brandType || BRAND_TYPES[p.brand] || "") !== typeFilter) return false;
+      if (typeFilter !== "all" && (p.brandType || "") !== typeFilter) return false;
       if (priceFilter === "under200" && p.priceLow >= 200) return false;
       if (priceFilter === "200to550" && (p.priceLow < 200 || p.priceLow >= 550)) return false;
       if (priceFilter === "550to1100" && (p.priceLow < 550 || p.priceLow >= 1100)) return false;
@@ -515,7 +521,7 @@ export default function Home() {
 
         {/* ═══ DETAIL ═══ */}
         {view === "detail" && selected && (() => {
-          const bt = selected.brandType || BRAND_TYPES[selected.brand];
+          const bt = selected.brandType;
           const similar = getSimilar(selected);
           const grouped = { top: [], heart: [], base: [] };
           selected.notes.forEach(n => { if (grouped[n.position]) grouped[n.position].push(n); });
@@ -528,20 +534,29 @@ export default function Home() {
 
               {/* Hero header */}
               <div className="mb-12">
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  <Tag color={FAMILY_COLORS[selected.family]}>{selected.family}</Tag>
-                  <Tag>{selected.concentration}</Tag>
-                  <Tag>{selected.gender}</Tag>
-                  {bt && <Tag color={TYPE_COLORS[bt]}>{bt}</Tag>}
-                  <Tag>{selected.year}</Tag>
-                </div>
-                <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{selected.name}</h1>
-                <div className="flex items-center gap-4 mt-3">
-                  <span onClick={() => openBrand(selected.brand)} className="text-lg text-stone cursor-pointer hover:text-ink transition-colors" style={{ borderBottom: '1px solid #D8D0C8' }}>{selected.brand}</span>
-                  <span className="text-stone">·</span>
-                  <span className="font-serif text-2xl">AED {selected.priceLow}{selected.priceHigh !== selected.priceLow && `–${selected.priceHigh}`}</span>
-                  <span className="text-stone">·</span>
-                  <Stars value={selected.rating} size={16} />
+                <div className="flex gap-6 items-start">
+                  {selected.image_url && (
+                    <div className="flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden bg-cream">
+                      <img src={selected.image_url} alt={selected.name} className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      <Tag color={FAMILY_COLORS[selected.family]}>{selected.family}</Tag>
+                      <Tag>{selected.concentration}</Tag>
+                      <Tag>{selected.gender}</Tag>
+                      {bt && <Tag color={TYPE_COLORS[bt]}>{bt}</Tag>}
+                      <Tag>{selected.year}</Tag>
+                    </div>
+                    <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{selected.name}</h1>
+                    <div className="flex items-center gap-4 mt-3">
+                      <span onClick={() => openBrand(selected.brand)} className="text-lg text-stone cursor-pointer hover:text-ink transition-colors" style={{ borderBottom: '1px solid #D8D0C8' }}>{selected.brand}</span>
+                      <span className="text-stone">·</span>
+                      <span className="font-serif text-2xl">AED {selected.priceLow}{selected.priceHigh !== selected.priceLow && `–${selected.priceHigh}`}</span>
+                      <span className="text-stone">·</span>
+                      <Stars value={selected.rating} size={16} />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -554,7 +569,7 @@ export default function Home() {
                     const ac = ACCORD_COLORS[a.name] || `hsl(${a.name.length * 37 % 360},40%,45%)`;
                     return (
                       <div key={a.name} className="flex items-center gap-3 mb-3">
-                        <div className="w-20 text-xs text-stone text-right capitalize flex-shrink-0">{a.name}</div>
+                        <div className="w-28 text-xs text-stone text-right capitalize flex-shrink-0">{a.name}</div>
                         <div className="flex-1 h-2 bg-cream overflow-hidden">
                           <div className="h-full bar-fill" style={{ width: `${a.strength}%`, background: ac }} />
                         </div>
@@ -575,7 +590,7 @@ export default function Home() {
                         const nc = NOTE_COLORS_MAP[n.name] || NOTE_COLORS[pos];
                         return (
                           <div key={n.name} className="flex items-center gap-3 mb-2">
-                            <div className="w-20 text-xs text-stone text-right truncate flex-shrink-0">{n.name}</div>
+                            <div className="w-28 text-xs text-stone text-right truncate flex-shrink-0">{n.name}</div>
                             <div className="flex-1 h-2 bg-cream overflow-hidden">
                               <div className="h-full bar-fill" style={{ width: `${n.strength}%`, background: nc, border: nc === '#FFFFFF' || nc === '#F2F0E8' ? '1px solid #ddd' : 'none' }} />
                             </div>
