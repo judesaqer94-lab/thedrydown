@@ -10,7 +10,7 @@ export default function NoteDetail({ noteName, info, matching, inTop, inHeart, i
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="animate-fade-up">
-          <a href="/notes" className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block no-underline">← All Notes</a>
+          <a href="/#notes" className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block no-underline">← All Notes</a>
 
           {/* Hero */}
           <div className="mb-12">
