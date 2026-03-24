@@ -463,12 +463,13 @@ export default function Home() {
             <span className="font-serif text-2xl tracking-tight"> Down</span>
           </div>
           <div className="flex items-center gap-6">
-            {[["browse", "Directory"], ["reviews", "Reviews"], ["brands", "Brands"]].map(([id, label]) => (
+            {[["browse", "Directory"], ["reviews", "Reviews"]].map(([id, label]) => (
               <button key={id} onClick={() => nav(id)}
-                className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === id || (view === "detail" && id === "browse") || (view === "brand" && id === "brands")) ? "text-ink" : "text-stone hover:text-ink"}`}>
+                className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === id || (view === "detail" && id === "browse")) ? "text-ink" : "text-stone hover:text-ink"}`}>
                 {label}
               </button>
             ))}
+            <a href="/brands" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
             <a href="/notes" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
             <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
             {isAdmin && <button onClick={() => nav("admin")} className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors relative">
@@ -914,7 +915,7 @@ export default function Home() {
         )}
         {view === "note_detail" && noteView && (
           <div className="animate-fade-up">
-            <button onClick={() => nav("notes")} className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block">← All Notes</button>
+            <a href="/notes" className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block no-underline">← All Notes</a>
             <div className="mb-8">
               <h1 className="font-serif text-4xl mb-2">{noteView.name}</h1>
               <p className="text-sm text-stone">Found in {noteView.count} fragrances</p>
@@ -943,7 +944,7 @@ export default function Home() {
                 <div className="flex flex-col gap-1.5">
                   <span onClick={() => nav("browse")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Directory</span>
                   <span onClick={() => nav("brands")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Brands</span>
-                  <span onClick={() => nav("notes")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Notes</span>
+                  <a href="/notes" className="text-xs text-mid hover:text-ink cursor-pointer transition-colors" style={{textDecoration:'none'}}>Notes</a>
                   <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
                 </div>
               </div>
