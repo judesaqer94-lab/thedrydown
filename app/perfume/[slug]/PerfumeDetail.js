@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Stars, Tag, PerfumeCard, Header, Footer } from '../../components/shared';
 import { FAMILY_COLORS, TYPE_COLORS, NOTE_COLORS, NOTE_LABELS, ACCORD_COLORS, RETAILERS, slugify } from '../../lib/constants';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 
 export default function PerfumeDetail({ perfume, similar, reviews: initialReviews }) {
   const [reviews] = useState(initialReviews);
