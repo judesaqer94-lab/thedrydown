@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Stars, Tag, PerfumeCard, Header, Footer } from '../../components/shared';
 import { FAMILY_COLORS, TYPE_COLORS, NOTE_COLORS, NOTE_LABELS, ACCORD_COLORS, RETAILERS, slugify } from '../../lib/constants';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 export default function PerfumeDetail({ perfume, similar, reviews: initialReviews }) {
   const [reviews] = useState(initialReviews);
@@ -84,7 +84,7 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                 </div>
                 <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{perfume.name}</h1>
                 <div className="flex items-center gap-4 mt-3 flex-wrap">
-                  <a href={`/brand/${perfume.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="text-lg text-stone hover:text-ink transition-colors no-underline" style={{ borderBottom: '1px solid #D8D0C8' }}>{perfume.brand}</a>
+                  <a href="/brands" className="text-lg text-stone hover:text-ink transition-colors no-underline" style={{ borderBottom: '1px solid #D8D0C8' }}>{perfume.brand}</a>
                   <span className="text-stone">·</span>
                   <span className="font-serif text-2xl">AED {perfume.price_low}{perfume.price_high !== perfume.price_low && `–${perfume.price_high}`}</span>
                   <span className="text-stone">·</span>
