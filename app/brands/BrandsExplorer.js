@@ -53,9 +53,9 @@ export default function BrandsExplorer({ brands }) {
           </div>
 
           {/* Search */}
-          <div className="border-b border-ink pb-2 mb-8 flex items-center gap-3">
-            <span className="text-stone text-sm">Search</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Find a brand..." className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-faint" />
+          <div className="border border-ink rounded-lg px-5 py-3 mb-8 flex items-center gap-3 bg-white shadow-sm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C8378" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search brands..." className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-stone/40" />
             {search && <button onClick={() => setSearch('')} className="text-stone hover:text-ink text-sm transition-colors">Clear</button>}
           </div>
 

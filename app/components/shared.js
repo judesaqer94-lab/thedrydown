@@ -69,7 +69,7 @@ export function Header({ current }) {
           <span className="font-serif text-lg italic" style={{ color: ACCENT }}>dry</span>
           <span className="font-serif text-lg"> down</span>
         </a>
-        <nav className="flex gap-6">
+        <nav className="flex gap-6 items-center">
           {[
             { label: 'Directory', href: '/' },
             { label: 'Brands', href: '/brands' },
@@ -81,6 +81,7 @@ export function Header({ current }) {
               {link.label}
             </a>
           ))}
+          <a href="/?view=submit" className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity no-underline" style={{textDecoration:'none', color:'#FAF8F5'}}>+ Suggest</a>
         </nav>
       </div>
     </header>
