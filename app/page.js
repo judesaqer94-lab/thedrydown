@@ -4,6 +4,10 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, NOTE_COLORS_MAP } from '../data/perfumes';
 import { supabase } from '../lib/supabase';
 
+function slugify(name, brand) {
+  return `${name}-${brand}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
 /* ═══ PALETTE ═══ */
 const TYPE_COLORS = { Niche: "#8B7A5E", Designer: "#5B7B9B", Arabic: "#B08060", Indie: "#7B9B78", Affordable: "#8B9B8B", Celebrity: "#A07898" };
 const FAMILY_COLORS = {
@@ -87,8 +91,9 @@ function Tag({ children, dark, active, onClick, style, color }) {
 
 function PerfumeCard({ perfume: p, onClick }) {
   const fc = FAMILY_COLORS[p.family] || '#8C8378';
+  const href = `/perfume/${slugify(p.name, p.brand)}`;
   return (
-    <div onClick={onClick} className="cursor-pointer group transition-all" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8' }}>
+    <a href={href} onClick={onClick} className="cursor-pointer group transition-all block no-underline" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8', textDecoration: 'none', color: 'inherit' }}>
       <div className="flex justify-between items-start gap-4">
         {p.image_url && (
           <div className="flex-shrink-0 w-14 h-14 rounded overflow-hidden bg-cream">
@@ -115,7 +120,7 @@ function PerfumeCard({ perfume: p, onClick }) {
       <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
         {p.notes.filter(n => n.position === "top").slice(0, 4).map(n => n.name).join(" · ")}
       </div>
-    </div>
+    </a>
   );
 }
 
@@ -513,7 +518,7 @@ export default function Home() {
 
             {/* List */}
             <div>
-              {filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} onClick={() => openPerfume(p)} />)}
+              {filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} />)}
             </div>
             {filtered.length === 0 && <div className="py-20 text-center text-stone font-serif text-2xl italic">No results</div>}
           </div>
@@ -775,7 +780,7 @@ export default function Home() {
               <div className="border-t border-faint pt-10">
                 <h2 className="font-serif text-3xl mb-6">You Might Also Like</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-t border-faint">
-                  {similar.map(p => <PerfumeCard key={p.name + p.brand} perfume={p} onClick={() => openPerfume(p)} />)}
+                  {similar.map(p => <PerfumeCard key={p.name + p.brand} perfume={p} />)}
                 </div>
               </div>
             </div>
@@ -882,7 +887,7 @@ export default function Home() {
               </div>
             </div>
             <div className="border-t border-faint">
-              {brandView.perfumes.map(p => <PerfumeCard key={p.name} perfume={p} onClick={() => openPerfume(p)} />)}
+              {brandView.perfumes.map(p => <PerfumeCard key={p.name} perfume={p} />)}
             </div>
           </div>
         )}
@@ -898,10 +903,10 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {allNotes.map(n => (
-                <span key={n.name} onClick={() => openNote(n.name)}
-                  className="px-3 py-1.5 border border-faint text-sm cursor-pointer hover:border-ink hover:bg-cream transition-all">
+                <a key={n.name} href={`/note/${encodeURIComponent(n.name.toLowerCase())}`}
+                  className="px-3 py-1.5 border border-faint text-sm cursor-pointer hover:border-ink hover:bg-cream transition-all no-underline text-inherit">
                   {n.name} <span className="text-xs text-stone">{n.count}</span>
-                </span>
+                </a>
               ))}
             </div>
           </div>
@@ -914,7 +919,7 @@ export default function Home() {
               <p className="text-sm text-stone">Found in {noteView.count} fragrances</p>
             </div>
             <div className="border-t border-faint">
-              {allPerfumes.filter(p => p.notes.some(n => n.name === noteView.name)).map(p => <PerfumeCard key={p.name + p.brand} perfume={p} onClick={() => openPerfume(p)} />)}
+              {allPerfumes.filter(p => p.notes.some(n => n.name === noteView.name)).map(p => <PerfumeCard key={p.name + p.brand} perfume={p} />)}
             </div>
           </div>
         )}
