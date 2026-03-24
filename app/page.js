@@ -463,7 +463,7 @@ export default function Home() {
             <span className="font-serif text-2xl tracking-tight"> Down</span>
           </div>
           <div className="flex items-center gap-6">
-            {[["browse", "Directory"], ["reviews", "Reviews"], ["brands", "Brands"], ["notes", "Notes"]].map(([id, label]) => (
+            {[["browse", "Directory"], ["reviews", "Reviews"], ["brands", "Brands"]].map(([id, label]) => (
               <button key={id} onClick={() => nav(id)}
                 className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === id || (view === "detail" && id === "browse") || (view === "brand" && id === "brands") || (view === "note_detail" && id === "notes")) ? "text-ink" : "text-stone hover:text-ink"}`}>
                 {label}
