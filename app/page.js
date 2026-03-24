@@ -463,12 +463,10 @@ export default function Home() {
             <span className="font-serif text-2xl tracking-tight"> Down</span>
           </div>
           <div className="flex items-center gap-6">
-            {[["browse", "Directory"], ["reviews", "Reviews"]].map(([id, label]) => (
-              <button key={id} onClick={() => nav(id)}
-                className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === id || (view === "detail" && id === "browse")) ? "text-ink" : "text-stone hover:text-ink"}`}>
-                {label}
-              </button>
-            ))}
+            <button onClick={() => nav("browse")}
+              className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === "browse") ? "text-ink" : "text-stone hover:text-ink"}`}>
+              Directory
+            </button>
             <a href="/brands" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
             <a href="/notes" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
             <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
@@ -499,11 +497,11 @@ export default function Home() {
             </div>
 
             {/* Search */}
-            <div className="border-b border-ink pb-2 mb-6 flex items-center gap-3">
-              <span className="text-stone text-sm">Search</span>
+            <div className="border border-ink rounded-lg px-5 py-3 mb-6 flex items-center gap-3 bg-white shadow-sm">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C8378" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="name, brand, note, accord..."
-                className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-faint" style={{ letterSpacing: '-0.01em' }} />
+                placeholder="Search by name, brand, note, or accord..."
+                className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-stone/40" style={{ letterSpacing: '-0.01em' }} />
               {query && <button onClick={() => setQuery("")} className="text-stone hover:text-ink text-sm transition-colors">Clear</button>}
             </div>
 

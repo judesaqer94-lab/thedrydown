@@ -3,11 +3,14 @@
 import { useState, useCallback } from 'react';
 import { Stars, Tag, PerfumeCard, Header, Footer } from '../../components/shared';
 import { FAMILY_COLORS, TYPE_COLORS, NOTE_COLORS, NOTE_LABELS, ACCORD_COLORS, RETAILERS, slugify } from '../../lib/constants';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 export default function PerfumeDetail({ perfume, similar, reviews: initialReviews }) {
-  const [reviews] = useState(initialReviews);
+  const [reviews, setReviews] = useState(initialReviews);
   const [toast, setToast] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReview, setNewReview] = useState({ name: '', rating: 5, title: '', body: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -20,6 +23,30 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
       showToast(`Vote recorded!`);
     } catch (e) { console.error(e); }
   }, [showToast]);
+
+  const submitReview = useCallback(async () => {
+    if (!newReview.name || !newReview.body) { showToast('Please fill in your name and review'); return; }
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.from('reviews').insert({
+        user_name: newReview.name,
+        rating: newReview.rating,
+        title: newReview.title,
+        body: newReview.body,
+        perfume_name: perfume.name,
+        perfume: perfume.name,
+      }).select();
+      if (!error) {
+        setReviews(prev => [{ user: newReview.name, rating: newReview.rating, title: newReview.title, body: newReview.body, date: 'Just now', helpful: 0 }, ...prev]);
+        setNewReview({ name: '', rating: 5, title: '', body: '' });
+        setShowReviewForm(false);
+        showToast('Review published!');
+      } else {
+        showToast('Error submitting review');
+      }
+    } catch (e) { showToast('Error submitting review'); }
+    setSubmitting(false);
+  }, [newReview, perfume.name, showToast]);
 
   // Parse notes
   const parseNotes = (notesStr) => (notesStr || '').split(',').map(n => n.trim()).filter(Boolean);
@@ -281,24 +308,70 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
           </div>
 
           {/* Reviews */}
-          {reviews.length > 0 && (
-            <div className="border-t border-faint pt-10 mb-12">
-              <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Reviews</h2>
-              {reviews.map((rv, i) => (
+          <div className="border-t border-faint pt-10 mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-serif text-3xl">Reviews</h2>
+              <button onClick={() => setShowReviewForm(!showReviewForm)}
+                className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">
+                {showReviewForm ? 'Cancel' : 'Write a Review'}
+              </button>
+            </div>
+
+            {/* Review Form */}
+            {showReviewForm && (
+              <div className="border border-faint p-6 mb-8 animate-fade-up">
+                <div className="max-w-lg">
+                  <input value={newReview.name} onChange={e => setNewReview({ ...newReview, name: e.target.value })}
+                    placeholder="Your name"
+                    className="w-full p-3 border border-faint bg-transparent text-sm mb-3 focus:border-ink focus:outline-none transition-colors" />
+                  <div className="flex gap-1 mb-3 items-center">
+                    <span className="text-xs text-stone mr-2">Rating:</span>
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <span key={s} onClick={() => setNewReview({ ...newReview, rating: s })}
+                        className="cursor-pointer text-lg" style={{ color: s <= newReview.rating ? "#9B8EC4" : "#D8D0C8" }}>★</span>
+                    ))}
+                  </div>
+                  <input value={newReview.title} onChange={e => setNewReview({ ...newReview, title: e.target.value })}
+                    placeholder="Review title"
+                    className="w-full p-3 border border-faint bg-transparent text-sm mb-3 focus:border-ink focus:outline-none transition-colors" />
+                  <textarea value={newReview.body} onChange={e => setNewReview({ ...newReview, body: e.target.value })}
+                    placeholder="What do you think of this fragrance?"
+                    rows={4}
+                    className="w-full p-3 border border-faint bg-transparent text-sm mb-3 resize-y focus:border-ink focus:outline-none transition-colors" />
+                  <button onClick={submitReview} disabled={submitting}
+                    className="px-6 py-2.5 text-sm font-medium bg-ink text-paper hover:opacity-80 transition-opacity"
+                    style={{ opacity: submitting ? 0.5 : 1 }}>
+                    {submitting ? 'Publishing...' : 'Publish Review'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Review List */}
+            {reviews.length > 0 ? (
+              reviews.map((rv, i) => (
                 <div key={i} className="border-b border-faint py-5">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user || "A")[0]}</div>
-                      <div><div className="text-sm font-medium">{rv.user}</div><div className="text-xs text-stone">{rv.date || rv.created_at}</div></div>
+                      <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user || rv.user_name || "A")[0]}</div>
+                      <div>
+                        <div className="text-sm font-medium">{rv.user || rv.user_name}</div>
+                        <div className="text-xs text-stone">{rv.date || (rv.created_at ? new Date(rv.created_at).toLocaleDateString() : '')}</div>
+                      </div>
                     </div>
                     <Stars value={rv.rating} size={12} />
                   </div>
-                  <div className="text-sm font-medium mb-1">{rv.title}</div>
+                  {rv.title && <div className="text-sm font-medium mb-1">{rv.title}</div>}
                   <p className="text-sm text-stone leading-relaxed">{rv.body}</p>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : !showReviewForm && (
+              <div className="py-12 text-center">
+                <p className="text-stone font-serif text-xl italic mb-3">No reviews yet</p>
+                <p className="text-sm text-stone">Be the first to review {perfume.name}</p>
+              </div>
+            )}
+          </div>
 
           {/* Similar */}
           <div className="border-t border-faint pt-10">
