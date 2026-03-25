@@ -5,6 +5,90 @@ const supabaseUrl = 'https://wydptxijqfqimsftgmlp.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5ZHB0eGlqcWZxaW1zZnRnbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MjY1MDYsImV4cCI6MjA4OTMwMjUwNn0.5GvUiFYw1PHFSw92XT6_Ktst20w_dwN8FTz4GYTR4fY';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// ═══ MULTI-DIMENSIONAL SIMILARITY ENGINE ═══
+// Scoring: Accords 35% | Notes 25% (base 3x, heart 2x, top 1x) | 
+//          Seasons 15% | Occasions 10% | Performance 5% | Gender 5% | Family 5%
+function findSimilarPerfumes(target, allPerfumes, limit = 6) {
+  const parseNotes = (str) => (str || '').split(',').map(n => n.trim().toLowerCase()).filter(Boolean);
+  const tTop = new Set(parseNotes(target.top_notes));
+  const tHeart = new Set(parseNotes(target.heart_notes));
+  const tBase = new Set(parseNotes(target.base_notes));
+  const tAccords = new Set(parseNotes(target.main_accords));
+
+  let tAccordPcts = {};
+  try { tAccordPcts = target.accord_percentages ? (typeof target.accord_percentages === 'string' ? JSON.parse(target.accord_percentages) : target.accord_percentages) : {}; } catch {}
+
+  let tSeasons = [];
+  try { tSeasons = target.season_ranking ? (typeof target.season_ranking === 'string' ? JSON.parse(target.season_ranking) : target.season_ranking) : []; } catch {}
+
+  let tOccasions = [];
+  try { tOccasions = target.occasion_ranking ? (typeof target.occasion_ranking === 'string' ? JSON.parse(target.occasion_ranking) : target.occasion_ranking) : []; } catch {}
+
+  const levelWeight = { 'Dominant': 1.0, 'Prominent': 0.75, 'Moderate': 0.5 };
+
+  const cosineSim = (vecA, vecB) => {
+    if (!vecA.length || !vecB.length) return 0.5;
+    const mapA = Object.fromEntries(vecA.map(v => [v.name, v.score]));
+    const mapB = Object.fromEntries(vecB.map(v => [v.name, v.score]));
+    const keys = [...new Set([...Object.keys(mapA), ...Object.keys(mapB)])];
+    let dot = 0, magA = 0, magB = 0;
+    for (const k of keys) {
+      const a = mapA[k] || 0, b = mapB[k] || 0;
+      dot += a * b; magA += a * a; magB += b * b;
+    }
+    const denom = Math.sqrt(magA) * Math.sqrt(magB);
+    return denom > 0 ? dot / denom : 0;
+  };
+
+  return allPerfumes
+    .filter(c => c.id !== target.id)
+    .map(c => {
+      const cTop = new Set(parseNotes(c.top_notes));
+      const cHeart = new Set(parseNotes(c.heart_notes));
+      const cBase = new Set(parseNotes(c.base_notes));
+      const cAccords = parseNotes(c.main_accords);
+
+      // Accord score (35 pts)
+      let accordHits = 0;
+      for (const a of cAccords.filter(a => tAccords.has(a))) {
+        accordHits += levelWeight[tAccordPcts[a]] || 0.5;
+      }
+      const accordScore = (accordHits / Math.max(tAccords.size, 1)) * 35;
+
+      // Note score (25 pts) — base 3x, heart 2x, top 1x
+      const noteScore = (
+        ([...tBase].filter(n => cBase.has(n)).length * 3 / Math.max(tBase.size, 1)) +
+        ([...tHeart].filter(n => cHeart.has(n)).length * 2 / Math.max(tHeart.size, 1)) +
+        ([...tTop].filter(n => cTop.has(n)).length * 1 / Math.max(tTop.size, 1))
+      ) / 6 * 25;
+
+      // Season score (15 pts)
+      let cSeasons = [];
+      try { cSeasons = c.season_ranking ? (typeof c.season_ranking === 'string' ? JSON.parse(c.season_ranking) : c.season_ranking) : []; } catch {}
+      const seasonScore = cosineSim(tSeasons, cSeasons) * 15;
+
+      // Occasion score (10 pts)
+      let cOccasions = [];
+      try { cOccasions = c.occasion_ranking ? (typeof c.occasion_ranking === 'string' ? JSON.parse(c.occasion_ranking) : c.occasion_ranking) : []; } catch {}
+      const occasionScore = cosineSim(tOccasions, cOccasions) * 10;
+
+      // Performance (5 pts)
+      const perfScore = 
+        ((c.longevity || '').toLowerCase() === (target.longevity || '').toLowerCase() ? 2.5 : 0) +
+        ((c.sillage || '').toLowerCase() === (target.sillage || '').toLowerCase() ? 2.5 : 0);
+
+      // Gender (5 pts) + Family (5 pts)
+      const genderScore = (c.gender || '').toLowerCase() === (target.gender || '').toLowerCase() ? 5 : 0;
+      const familyScore = (c.family || '').toLowerCase() === (target.family || '').toLowerCase() ? 5 : 0;
+
+      const similarity_score = Math.round((accordScore + noteScore + seasonScore + occasionScore + perfScore + genderScore + familyScore) * 10) / 10;
+
+      return { ...c, similarity_score };
+    })
+    .sort((a, b) => b.similarity_score - a.similarity_score)
+    .slice(0, limit);
+}
+
 // ═══ SEO METADATA ═══
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -72,22 +156,10 @@ export default async function PerfumePage({ params }) {
   // Fetch reviews for this perfume
   const { data: reviews } = await supabase.from('reviews').select('*').eq('perfume', perfume.name).order('created_at', { ascending: false });
 
-  // Find similar perfumes
-  const pNotes = new Set((perfume.top_notes + ',' + perfume.heart_notes + ',' + perfume.base_notes).split(',').map(n => n.trim().toLowerCase()).filter(Boolean));
-  const pAccords = new Set((perfume.main_accords || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean));
-  
-  const similar = (allPerfumes || [])
-    .filter(x => x.id !== perfume.id)
-    .map(x => {
-      const xNotes = new Set((x.top_notes + ',' + x.heart_notes + ',' + x.base_notes).split(',').map(n => n.trim().toLowerCase()).filter(Boolean));
-      const xAccords = new Set((x.main_accords || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean));
-      const noteOverlap = [...pNotes].filter(n => xNotes.has(n)).length;
-      const accordOverlap = [...pAccords].filter(a => xAccords.has(a)).length;
-      const familyBonus = x.family === perfume.family ? 3 : 0;
-      return { ...x, score: noteOverlap * 2 + accordOverlap * 3 + familyBonus };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 6);
+  // ═══ SIMILARITY ENGINE ═══
+  // Multi-dimensional scoring: accords (35%), notes by layer (25%), 
+  // seasons (15%), occasions (10%), performance (5%), gender (5%), family (5%)
+  const similar = findSimilarPerfumes(perfume, allPerfumes || []);
 
   // Generate structured data for Google
   const structuredData = {
