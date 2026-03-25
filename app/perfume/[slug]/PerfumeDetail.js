@@ -379,15 +379,44 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
             <p className="text-xs text-stone mb-6">Based on shared accords, notes, seasons, occasions & performance</p>
             <div className="border-t border-faint">
               {similar.map(p => (
-                <div key={p.id} className="relative">
-                  {p.similarity_score && (
-                    <div className="absolute top-4 right-0 text-[10px] uppercase tracking-widest font-medium px-2 py-1" 
-                         style={{ background: '#9B8EC420', color: '#9B8EC4', border: '1px solid #9B8EC440' }}>
-                      {Math.round(p.similarity_score)}% match
+                <a key={p.id} href={`/perfume/${slugify(p.name, p.brand)}`} className="cursor-pointer group transition-all block no-underline text-inherit" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8', textDecoration: 'none' }}>
+                  <div className="flex justify-between items-start gap-4">
+                    {p.image_url && (
+                      <div className="flex-shrink-0 w-14 h-14 rounded overflow-hidden bg-cream">
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" loading="lazy" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <h3 className="font-serif text-xl leading-tight" style={{ letterSpacing: '-0.02em' }}>{p.name}</h3>
+                        <span className="text-xs text-stone uppercase tracking-wider">{p.year}</span>
+                      </div>
+                      <div className="text-sm text-stone mt-1">{p.brand}</div>
+                      <div className="flex gap-1.5 mt-2 flex-wrap items-center">
+                        <Tag color={FAMILY_COLORS[p.family]}>{p.family}</Tag>
+                        <Tag>{p.concentration}</Tag>
+                        <Tag>{p.gender}</Tag>
+                        {p.similarity_score && (
+                          <span className="text-[10px] uppercase tracking-widest font-medium px-2 py-1 ml-1"
+                                style={{ background: '#9B8EC420', color: '#9B8EC4', border: '1px solid #9B8EC440' }}>
+                            {Math.round(p.similarity_score)}% match
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <PerfumeCard perfume={p} href={`/perfume/${slugify(p.name, p.brand)}`} />
-                </div>
+                    <div className="text-right flex-shrink-0">
+                      {(p.price_low || p.priceLow) ? (
+                        <div className="font-serif text-2xl" style={{ letterSpacing: '-0.03em' }}>AED {p.priceLow || p.price_low}</div>
+                      ) : (
+                        <div className="text-xs text-stone italic">Price N/A</div>
+                      )}
+                      <div className="mt-1"><Stars value={p.rating} size={11} /></div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                    {(p.top_notes || '').split(',').slice(0, 4).map(n => n.trim()).filter(Boolean).join(' · ')}
+                  </div>
+                </a>
               ))}
             </div>
           </div>
