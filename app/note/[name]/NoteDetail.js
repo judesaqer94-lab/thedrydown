@@ -4,6 +4,21 @@ import { Stars, Tag, PerfumeCard, Header, Footer } from '../../components/shared
 import { NOTE_COLORS, slugify } from '../../lib/constants';
 
 export default function NoteDetail({ noteName, info, matching, inTop, inHeart, inBase, topPaired }) {
+  const categoryColor = info ? (
+    info.category === 'Floral' ? '#D291BC' : 
+    info.category === 'Wood' || info.category === 'Woody' ? '#A18062' : 
+    info.category === 'Spice' ? '#C87941' : 
+    info.category === 'Citrus' ? '#E8D44D' : 
+    info.category === 'Gourmand' ? '#CC8855' :
+    info.category === 'Resin' ? '#B5651D' :
+    info.category === 'Animalic' ? '#8B7355' :
+    info.category === 'Aromatic' ? '#73C27E' :
+    info.category === 'Fruity' ? '#E07B7B' :
+    info.category === 'Green' ? '#73C27E' :
+    info.category === 'Aquatic' ? '#6BB3D9' :
+    info.category === 'Synthetic' ? '#A9A9A9' : '#8C8378'
+  ) : '#8C8378';
+
   return (
     <div className="min-h-screen bg-paper">
       <Header current="notes" />
@@ -12,36 +27,50 @@ export default function NoteDetail({ noteName, info, matching, inTop, inHeart, i
         <div className="animate-fade-up">
           <a href="/notes" className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block no-underline">← All Notes</a>
 
-          {/* Hero */}
+          {/* Hero with image */}
           <div className="mb-12">
-            <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{noteName}</h1>
-            <div className="flex items-center gap-4 flex-wrap">
-              {info && <Tag color={
-                info.category === 'Floral' ? '#D291BC' : 
-                info.category === 'Wood' || info.category === 'Woody' ? '#A18062' : 
-                info.category === 'Spice' ? '#C87941' : 
-                info.category === 'Citrus' ? '#E8D44D' : 
-                info.category === 'Gourmand' ? '#CC8855' :
-                info.category === 'Resin' ? '#B5651D' :
-                info.category === 'Animalic' ? '#8B7355' :
-                info.category === 'Aromatic' ? '#73C27E' : '#8C8378'
-              }>{info.category}</Tag>}
-              <span className="text-sm text-stone">Found in {matching.length} fragrances</span>
-            </div>
-          </div>
-
-          {/* Education section */}
-          {info && (
-            <div className="mb-12 max-w-3xl">
-              <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-4 pb-2 border-b border-faint">About {noteName}</h2>
-              <p className="text-sm leading-relaxed text-stone mb-4">{info.description}</p>
-              {info.origin && (
-                <div className="text-xs text-stone">
-                  <span className="uppercase tracking-widest font-medium text-ink">Origin: </span>{info.origin}
+            <div className="flex gap-8 items-start flex-col md:flex-row">
+              {/* Image */}
+              {info?.image && (
+                <div className="flex-shrink-0 w-full md:w-48 h-48 rounded-lg overflow-hidden bg-cream">
+                  <img 
+                    src={info.image} 
+                    alt={noteName} 
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                  />
                 </div>
               )}
+
+              {/* Title + Meta */}
+              <div className="flex-1">
+                <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{noteName}</h1>
+                <div className="flex items-center gap-3 flex-wrap mb-4">
+                  {info && <Tag color={categoryColor}>{info.category}</Tag>}
+                  <span className="text-sm text-stone">Found in <span className="font-medium text-ink">{matching.length}</span> fragrances</span>
+                </div>
+
+                {/* Description */}
+                {info && (
+                  <p className="text-sm leading-relaxed text-stone mb-4 max-w-2xl">{info.description}</p>
+                )}
+
+                {info?.origin && (
+                  <div className="text-xs text-stone">
+                    <span className="uppercase tracking-widest font-medium text-ink">Origin: </span>{info.origin}
+                  </div>
+                )}
+
+                {/* No info fallback */}
+                {!info && (
+                  <p className="text-sm leading-relaxed text-stone italic">
+                    {noteName} is a fragrance note found in {matching.length} perfumes in our directory. 
+                    Explore the fragrances below to discover how perfumers use this ingredient.
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
 
           {/* Position breakdown */}
           <div className="grid grid-cols-3 gap-4 mb-12">
