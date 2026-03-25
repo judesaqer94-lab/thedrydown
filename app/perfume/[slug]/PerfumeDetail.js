@@ -375,10 +375,19 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
 
           {/* Similar */}
           <div className="border-t border-faint pt-10">
-            <h2 className="font-serif text-3xl mb-6">You Might Also Like</h2>
+            <h2 className="font-serif text-3xl mb-2">You Might Also Like</h2>
+            <p className="text-xs text-stone mb-6">Based on shared accords, notes, seasons, occasions & performance</p>
             <div className="border-t border-faint">
               {similar.map(p => (
-                <PerfumeCard key={p.id} perfume={p} href={`/perfume/${slugify(p.name, p.brand)}`} />
+                <div key={p.id} className="relative">
+                  {p.similarity_score && (
+                    <div className="absolute top-4 right-0 text-[10px] uppercase tracking-widest font-medium px-2 py-1" 
+                         style={{ background: '#9B8EC420', color: '#9B8EC4', border: '1px solid #9B8EC440' }}>
+                      {Math.round(p.similarity_score)}% match
+                    </div>
+                  )}
+                  <PerfumeCard perfume={p} href={`/perfume/${slugify(p.name, p.brand)}`} />
+                </div>
               ))}
             </div>
           </div>
