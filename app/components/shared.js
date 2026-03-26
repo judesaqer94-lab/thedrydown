@@ -74,6 +74,7 @@ export function Header({ current }) {
             { label: 'Directory', href: '/' },
             { label: 'Brands', href: '/brands' },
             { label: 'Notes', href: '/notes' },
+            { label: 'About', href: '/about' },
           ].map(link => (
             <a key={link.label} href={link.href}
               className="text-xs uppercase tracking-widest font-medium transition-colors no-underline"
@@ -81,7 +82,7 @@ export function Header({ current }) {
               {link.label}
             </a>
           ))}
-          <a href="/?view=submit" className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity no-underline" style={{textDecoration:'none', color:'#FAF8F5'}}>+ Suggest</a>
+          <a href="/feedback" className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity no-underline" style={{textDecoration:'none', color:'#FAF8F5'}}>Feedback</a>
         </nav>
       </div>
     </header>
