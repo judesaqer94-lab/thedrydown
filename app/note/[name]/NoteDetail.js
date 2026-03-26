@@ -63,9 +63,12 @@ export default function NoteDetail({ noteName, info, matching, inTop, inHeart, i
 
                 {/* No info fallback */}
                 {!info && (
-                  <p className="text-sm leading-relaxed text-stone italic">
-                    {noteName} is a fragrance note found in {matching.length} perfumes in our directory. 
-                    Explore the fragrances below to discover how perfumers use this ingredient.
+                  <p className="text-sm leading-relaxed text-stone">
+                    {noteName} is a {matching.length > 50 ? 'widely used' : matching.length > 20 ? 'popular' : matching.length > 5 ? 'distinctive' : 'rare and unique'} fragrance ingredient, appearing in {matching.length} perfume{matching.length !== 1 ? 's' : ''} in our directory.
+                    {inBase.length > inTop.length ? ` It\'s most commonly used as a base note, providing lasting depth and character.` : 
+                     inTop.length > inHeart.length ? ` It\'s most commonly used as a top note, creating an immediate first impression.` : 
+                     inHeart.length > 0 ? ` It\'s most commonly used as a heart note, forming the core character of a fragrance.` : ''}
+                    {' '}Explore the perfumes below to discover how this note is used by different houses and perfumers.
                   </p>
                 )}
               </div>
