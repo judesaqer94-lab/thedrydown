@@ -469,7 +469,8 @@ export default function Home() {
             </button>
             <a href="/brands" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
             <a href="/notes" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
-            <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
+            <a href="/about" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>About</a>
+            <a href="/feedback" className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity" style={{textDecoration:'none', color:'#FAF8F5'}}>Feedback</a>
             {isAdmin && <button onClick={() => nav("admin")} className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors relative">
               Admin{pending.length > 0 && <span className="absolute -top-1 -right-3 bg-accent text-paper text-[9px] font-bold w-4 h-4 flex items-center justify-center">{pending.length}</span>}
             </button>}
@@ -941,15 +942,16 @@ export default function Home() {
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Explore</div>
                 <div className="flex flex-col gap-1.5">
                   <span onClick={() => nav("browse")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Directory</span>
-                  <span onClick={() => nav("brands")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Brands</span>
-                  <a href="/notes" className="text-xs text-mid hover:text-ink cursor-pointer transition-colors" style={{textDecoration:'none'}}>Notes</a>
-                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
+                  <a href="/brands" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
+                  <a href="/notes" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
+                  <a href="/about" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>About</a>
                 </div>
               </div>
               <div>
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Community</div>
                 <div className="flex flex-col gap-1.5">
-                  <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
+                  <a href="/feedback" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Feedback</a>
+                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
                 </div>
               </div>
             </div>
