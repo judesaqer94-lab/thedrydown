@@ -5,7 +5,11 @@ import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, NOTE_COLORS_MAP } from '../data/
 import { supabase } from '../lib/supabase';
 
 function slugify(name, brand) {
-  return `${name}-${brand}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `${name}-${brand}`
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 /* ═══ PALETTE ═══ */
@@ -492,7 +496,7 @@ export default function Home() {
             {/* Hero */}
             <div className="mb-10 pt-4">
               <h1 className="font-serif text-6xl leading-none tracking-tight mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Fragrance<br /><span className="italic" style={{ color: '#9B8EC4' }}>Directory</span>
+                Fragrance <span className="italic" style={{ color: '#9B8EC4' }}>directory</span>
               </h1>
               <p className="text-stone text-sm mt-4">{allPerfumes.length} fragrances · {brands.length} brands · {allNotes.length} notes</p>
             </div>
