@@ -20,7 +20,7 @@ export default function NoteDetail({ noteName, info, matching, inTop, inHeart, i
   ) : '#8C8378';
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <Header current="notes" />
 
       <main className="max-w-5xl mx-auto px-6 py-8">
