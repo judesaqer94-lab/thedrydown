@@ -186,33 +186,45 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                   <div>
                     <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Best Seasons</h2>
                     <div className="grid grid-cols-4 gap-3">
-                      {seasons.sort((a, b) => b.score - a.score).map(s => {
-                        const colors = { fall: '#C4956B', winter: '#4A7090', spring: '#A0657B', summer: '#D4A060', autumn: '#C4956B' };
-                        const pct = Math.round(s.score / 3 * 100);
-                        return (
-                          <div key={s.name} className="text-center py-3 border border-faint">
-                            <div className="text-xs font-medium mb-2 capitalize" style={{ color: colors[s.name] || '#8C8378' }}>{s.name}</div>
-                            <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
-                              <div className="h-full" style={{ width: `${pct}%`, background: colors[s.name] || '#8C8378' }} />
+                      {(() => {
+                        const sorted = [...seasons].sort((a, b) => b.score - a.score);
+                        const total = sorted.reduce((sum, s) => sum + s.score, 0) || 1;
+                        return sorted.map(s => {
+                          const colors = { fall: '#C4956B', winter: '#4A7090', spring: '#A0657B', summer: '#D4A060', autumn: '#C4956B' };
+                          const pct = Math.round(s.score / total * 100);
+                          return (
+                            <div key={s.name} className="text-center py-3 border border-faint">
+                              <div className="text-xs font-medium mb-2 capitalize" style={{ color: colors[s.name] || '#8C8378' }}>{s.name}</div>
+                              <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
+                                <div className="h-full" style={{ width: `${pct}%`, background: colors[s.name] || '#8C8378' }} />
+                              </div>
+                              <div className="text-[10px] text-stone mt-1">{pct}%</div>
                             </div>
-                            <div className="text-[10px] text-stone mt-1">{pct}%</div>
-                          </div>
-                        );
-                      })}
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 )}
                 {occasions.length > 0 && (
                   <div>
                     <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Best Occasions</h2>
-                    {occasions.sort((a, b) => b.score - a.score).map(o => (
-                      <div key={o.name} className="flex items-center gap-3 mb-3">
-                        <div className="w-24 text-xs text-stone text-right capitalize flex-shrink-0">{o.name}</div>
-                        <div className="flex-1 h-2 bg-cream overflow-hidden">
-                          <div className="h-full bar-fill" style={{ width: `${Math.round(o.score / 2 * 100)}%`, background: '#9B8EC4' }} />
-                        </div>
-                      </div>
-                    ))}
+                    {(() => {
+                      const sorted = [...occasions].sort((a, b) => b.score - a.score);
+                      const total = sorted.reduce((sum, o) => sum + o.score, 0) || 1;
+                      return sorted.map(o => {
+                        const pct = Math.round(o.score / total * 100);
+                        return (
+                          <div key={o.name} className="flex items-center gap-3 mb-3">
+                            <div className="w-24 text-xs text-stone text-right capitalize flex-shrink-0">{o.name}</div>
+                            <div className="flex-1 h-2 bg-cream overflow-hidden">
+                              <div className="h-full bar-fill" style={{ width: `${pct}%`, background: '#9B8EC4' }} />
+                            </div>
+                            <div className="w-10 text-[10px] text-stone">{pct}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
