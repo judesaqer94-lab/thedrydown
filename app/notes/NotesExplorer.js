@@ -11,14 +11,14 @@ export default function NotesExplorer({ notes }) {
     : notes;
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <Header current="notes" />
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="animate-fade-up">
           <div className="mb-10 pt-4">
             <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>
-              Notes<br /><span className="italic" style={{ color: '#9B8EC4' }}>Explorer</span>
+              Notes <span className="italic" style={{ color: '#9B8EC4' }}>explorer</span>
             </h1>
             <p className="text-sm text-stone mt-3">{notes.length} unique notes · Click any note to learn more</p>
           </div>
