@@ -27,7 +27,7 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <Header current="feedback" />
 
       <main className="max-w-2xl mx-auto px-6 py-16">
