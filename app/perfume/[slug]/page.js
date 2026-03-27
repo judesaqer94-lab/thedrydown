@@ -89,13 +89,23 @@ function findSimilarPerfumes(target, allPerfumes, limit = 6) {
     .slice(0, limit);
 }
 
+// ═══ SLUG HELPER ═══
+// Normalize accented characters before slugifying
+function normalizeSlug(str) {
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents: é→e, è→e, ô→o
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 // ═══ SEO METADATA ═══
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const { data } = await supabase.from('perfumes').select('*').limit(1000);
+  const { data } = await supabase.from('perfumes').select('*').limit(2000);
   
   const perfume = data?.find(p => {
-    const s = `${p.name}-${p.brand}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const s = normalizeSlug(`${p.name}-${p.brand}`);
     return s === slug;
   });
   
@@ -134,10 +144,10 @@ export default async function PerfumePage({ params }) {
   const { slug } = await params;
   
   // Fetch all perfumes for matching + similar
-  const { data: allPerfumes } = await supabase.from('perfumes').select('*').limit(1000);
+  const { data: allPerfumes } = await supabase.from('perfumes').select('*').limit(2000);
   
   const perfume = allPerfumes?.find(p => {
-    const s = `${p.name}-${p.brand}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const s = normalizeSlug(`${p.name}-${p.brand}`);
     return s === slug;
   });
   
