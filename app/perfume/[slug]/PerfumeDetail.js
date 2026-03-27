@@ -79,7 +79,7 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <Header current="directory" />
 
       {/* Toast */}
