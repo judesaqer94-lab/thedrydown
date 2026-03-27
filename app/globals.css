@@ -9,10 +9,13 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: #FFFFFF;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8F6F9 30%, #F5F2F7 60%, #FAF8F5 100%);
+  background-attachment: fixed;
   color: #1A1A1A;
   -webkit-font-smoothing: antialiased;
   font-weight: 400;
   letter-spacing: -0.01em;
+  min-height: 100vh;
 }
 
 ::selection {
@@ -24,7 +27,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #D4D4D4; border-radius: 3px; }
 
-/* â•â•â• ANIMATIONS â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â ANIMATIONS Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -79,14 +82,14 @@ body {
 .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.5s; }
 
-/* â•â•â• BAR ANIMATIONS â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â BAR ANIMATIONS Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 .bar-fill {
   animation: barGrow 1s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* â•â•â• PERFUME CARD HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â PERFUME CARD HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 a[href*="/perfume/"] {
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
@@ -115,7 +118,7 @@ a[href*="/perfume/"]:hover::after {
   transform: translateY(-50%) translateX(0);
 }
 
-/* â•â•â• NOTE TAG HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â NOTE TAG HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 a[href*="/note/"] {
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
@@ -126,7 +129,7 @@ a[href*="/note/"]:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* â•â•â• IMAGE HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â IMAGE HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 img {
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -136,14 +139,14 @@ a[href*="/perfume/"] img:hover {
   transform: scale(1.08);
 }
 
-/* â•â•â• BUTTON EFFECTS â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â BUTTON EFFECTS Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 a[class*="bg-ink"]:hover, button[class*="bg-ink"]:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(26, 26, 26, 0.2);
 }
 
-/* â•â•â• SEARCH BAR FOCUS â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â SEARCH BAR FOCUS Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 div[class*="rounded-lg"][class*="border-ink"] {
   transition: all 0.3s ease;
@@ -154,7 +157,7 @@ div[class*="rounded-lg"][class*="border-ink"]:focus-within {
   border-color: #9B8EC4;
 }
 
-/* â•â•â• RETAILER CARD HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â RETAILER CARD HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 a[target="_blank"][class*="border-faint"] {
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
@@ -166,7 +169,7 @@ a[target="_blank"][class*="border-faint"]:hover {
   border-color: #9B8EC4;
 }
 
-/* â•â•â• SECTION ACCENTS â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â SECTION ACCENTS Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 h2[class*="font-serif"][class*="text-3xl"] {
   position: relative;
@@ -183,19 +186,19 @@ h2[class*="font-serif"][class*="text-3xl"]::after {
   background: #9B8EC4;
 }
 
-/* â•â•â• FOOTER GRADIENT â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â FOOTER GRADIENT Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 footer {
   background: linear-gradient(180deg, #FFFFFF 0%, #FAF9F6 100%);
 }
 
-/* â•â•â• SMOOTH PAGE LOAD â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â SMOOTH PAGE LOAD Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 main {
   animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* â•â•â• STAR HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â STAR HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 span[class*="cursor-pointer"][style*="9B8EC4"] {
   transition: transform 0.15s ease;
@@ -206,14 +209,14 @@ span[class*="cursor-pointer"][style*="9B8EC4"]:hover {
   transform: scale(1.3);
 }
 
-/* â•â•â• ACCORD LABEL HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â ACCORD LABEL HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 .w-28[class*="text-right"]:hover {
   color: #1A1A1A !important;
   transition: color 0.2s ease;
 }
 
-/* â•â•â• BACK LINK HOVER â•â•â• */
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â BACK LINK HOVER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 a[class*="tracking-widest"][class*="text-stone"]:hover {
   letter-spacing: 0.12em;
