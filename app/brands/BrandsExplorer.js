@@ -16,7 +16,7 @@ export default function BrandsExplorer({ brands }) {
 
   if (selectedBrand) {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen">
         <Header current="brands" />
         <main className="max-w-5xl mx-auto px-6 py-8">
           <div className="animate-fade-up">
@@ -41,13 +41,13 @@ export default function BrandsExplorer({ brands }) {
   }
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <Header current="brands" />
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="animate-fade-up">
           <div className="mb-10 pt-4">
             <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>
-              Brand<br /><span className="italic" style={{ color: '#9B8EC4' }}>Directory</span>
+              Brand <span className="italic" style={{ color: '#9B8EC4' }}>directory</span>
             </h1>
             <p className="text-sm text-stone mt-3">{brands.length} brands</p>
           </div>
