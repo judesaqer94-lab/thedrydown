@@ -28,20 +28,21 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
     if (!newReview.name || !newReview.body) { showToast('Please fill in your name and review'); return; }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.from('reviews').insert({
+      // FIX: Removed 'perfume' field (doesn't exist in table) and removed .select()
+      const { error } = await supabase.from('reviews').insert({
         user_name: newReview.name,
         rating: newReview.rating,
         title: newReview.title,
         body: newReview.body,
         perfume_name: perfume.name,
-        perfume: perfume.name,
-      }).select();
+      });
       if (!error) {
-        setReviews(prev => [{ user: newReview.name, rating: newReview.rating, title: newReview.title, body: newReview.body, date: 'Just now', helpful: 0 }, ...prev]);
+        setReviews(prev => [{ user_name: newReview.name, rating: newReview.rating, title: newReview.title, body: newReview.body, created_at: new Date().toISOString(), helpful: 0 }, ...prev]);
         setNewReview({ name: '', rating: 5, title: '', body: '' });
         setShowReviewForm(false);
         showToast('Review published!');
       } else {
+        console.error('Review submit error:', error);
         showToast('Error submitting review');
       }
     } catch (e) { showToast('Error submitting review'); }
@@ -365,10 +366,10 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                 <div key={i} className="border-b border-faint py-5">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user || rv.user_name || "A")[0]}</div>
+                      <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user_name || "A")[0]}</div>
                       <div>
-                        <div className="text-sm font-medium">{rv.user || rv.user_name}</div>
-                        <div className="text-xs text-stone">{rv.date || (rv.created_at ? new Date(rv.created_at).toLocaleDateString() : '')}</div>
+                        <div className="text-sm font-medium">{rv.user_name}</div>
+                        <div className="text-xs text-stone">{rv.created_at ? new Date(rv.created_at).toLocaleDateString() : ''}</div>
                       </div>
                     </div>
                     <Stars value={rv.rating} size={12} />
