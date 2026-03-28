@@ -802,7 +802,7 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-faint">
-              <button onClick={() => setShowWriteReview(!showWriteReview)} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
+              <button onClick={() => setShowWriteReview(!showWriteReview); setNewReview(prev => ({...prev, perfume: selected.name}))} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
               <div className="flex gap-2 ml-auto">
                 {[["helpful", "Most Helpful"], ["rating", "Top Rated"]].map(([v, l]) => (
                   <button key={v} onClick={() => setReviewSort(v)}
