@@ -5,76 +5,87 @@ import { PERFUMES, BRAND_TYPES } from '../../data/perfumes';
 function findPerfume(brand, fragrance) {
   const b = (brand || '').toLowerCase().trim();
   const f = (fragrance || '').toLowerCase().trim();
-  let match = PERFUMES.find(p => p.brand.toLowerCase() === b && p.name.toLowerCase() === f);
+  let match = PERFUMES.find(function(p) { return p.brand.toLowerCase() === b && p.name.toLowerCase() === f; });
   if (match) return match;
-  match = PERFUMES.find(p => p.name.toLowerCase() === f && p.brand.toLowerCase().includes(b));
+  match = PERFUMES.find(function(p) { return p.name.toLowerCase() === f && p.brand.toLowerCase().includes(b); });
   if (match) return match;
-  match = PERFUMES.find(p => (p.brand.toLowerCase().includes(b) || b.includes(p.brand.toLowerCase())) && (p.name.toLowerCase().includes(f) || f.includes(p.name.toLowerCase())));
+  match = PERFUMES.find(function(p) { return (p.brand.toLowerCase().includes(b) || b.includes(p.brand.toLowerCase())) && (p.name.toLowerCase().includes(f) || f.includes(p.name.toLowerCase())); });
   if (match) return match;
-  match = PERFUMES.find(p => p.name.toLowerCase() === f);
+  match = PERFUMES.find(function(p) { return p.name.toLowerCase() === f; });
   if (match) return match;
-  match = PERFUMES.find(p => f.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(f));
+  match = PERFUMES.find(function(p) { return f.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(f); });
   return match || null;
 }
 
 function makeSlug(perfume) {
-  const name = perfume.name.toLowerCase().replace(/['']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const brand = perfume.brand.toLowerCase().replace(/['']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  var name = perfume.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  var brand = perfume.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   return name + '-' + brand;
 }
 
 function logMiss(identified) {
-  fetch('https://script.google.com/macros/s/AKfycbxvSNZV1aDcw90DGPnFWUDosW4RDI7SQrRLI2DnxFCsx4fFNZ-PMw0u4mm2Rc1h13FmoQ/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbw_WvPv_6p2z_AC4O4WpN0J_gLZ0wMuo6974yXYUIH6MA9weVKrRlre5hdU5_kpeyJjvA/exec', {
     method: 'POST',
     mode: 'no-cors',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ brand: identified.brand, fragrance: identified.fragrance, concentration: identified.concentration, confidence: identified.confidence, timestamp: new Date().toISOString() }),
+    body: JSON.stringify({
+      brand: identified.brand,
+      fragrance: identified.fragrance,
+      concentration: identified.concentration,
+      confidence: identified.confidence,
+      timestamp: new Date().toISOString()
+    }),
   }).catch(function() {});
 }
 
-function StarRating({ rating }) {
+function StarRating(props) {
+  var rating = props.rating;
   var full = Math.floor(rating);
   var half = rating % 1 >= 0.25;
   var empty = 5 - full - (half ? 1 : 0);
-  return <span style={{ color: '#9B8EC4', fontSize: 16, letterSpacing: 1 }}>{'★'.repeat(full)}{half ? '½' : ''}{'☆'.repeat(empty)}</span>;
+  var stars = '';
+  for (var i = 0; i < full; i++) stars += '\u2605';
+  if (half) stars += '\u00BD';
+  for (var j = 0; j < empty; j++) stars += '\u2606';
+  return React.createElement('span', { style: { color: '#9B8EC4', fontSize: 16, letterSpacing: 1 } }, stars);
 }
 
-function NoteBar({ name, strength, color }) {
+function NoteBar(props) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-      <div style={{ width: 90, textAlign: 'right', fontSize: 12, color: '#78716C' }}>{name}</div>
+      <div style={{ width: 90, textAlign: 'right', fontSize: 12, color: '#78716C' }}>{props.name}</div>
       <div style={{ flex: 1, height: 8, background: '#F0ECF4', borderRadius: 4, overflow: 'hidden' }}>
-        <div className="bar-fill" style={{ width: strength + '%', height: '100%', background: color, borderRadius: 4 }} />
+        <div style={{ width: props.strength + '%', height: '100%', background: props.color, borderRadius: 4 }} />
       </div>
     </div>
   );
 }
 
-function AccordBar({ name, strength }) {
+function AccordBar(props) {
   var colors = { woody: '#DAA520', amber: '#DAA520', 'warm spicy': '#D2691E', sweet: '#E8A87C', musky: '#C0C0C0', floral: '#FF69B4', citrus: '#FFD700', fresh: '#4ECDC4', aromatic: '#6B8E23', gourmand: '#D2691E', oud: '#4A2810', leather: '#808080', powdery: '#DDA0DD', fruity: '#FF6347', rose: '#FF1493', vanilla: '#FFD700', coffee: '#4A2810', tobacco: '#8B6040', smoky: '#808080', aquatic: '#4682B4', green: '#228B22', clean: '#87CEEB', coconut: '#F5E6C8', saffron: '#FF8C00', boozy: '#B8860B', incense: '#A0522D', earthy: '#556B2F', balsamic: '#A0522D', cherry: '#DC143C', animalic: '#808080', honey: '#FFD700', patchouli: '#556B2F', chocolate: '#6B3410', tea: '#228B22', resinous: '#A0522D', caramel: '#D2691E', iris: '#DDA0DD', lavender: '#9370DB', cinnamon: '#D2691E', almond: '#D2B48C', tropical: '#FFA500', metallic: '#C0C0C0', mineral: '#A09080' };
-  var c = colors[name.toLowerCase()] || '#9B8EC4';
+  var c = colors[props.name.toLowerCase()] || '#9B8EC4';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-      <div style={{ width: 90, textAlign: 'right', fontSize: 12, color: '#78716C', textTransform: 'capitalize' }}>{name}</div>
+      <div style={{ width: 90, textAlign: 'right', fontSize: 12, color: '#78716C', textTransform: 'capitalize' }}>{props.name}</div>
       <div style={{ flex: 1, height: 10, background: '#F0ECF4', borderRadius: 5, overflow: 'hidden' }}>
-        <div className="bar-fill" style={{ width: strength + '%', height: '100%', background: c, borderRadius: 5 }} />
+        <div style={{ width: props.strength + '%', height: '100%', background: c, borderRadius: 5 }} />
       </div>
     </div>
   );
 }
 
-function BuyLink({ name, sublabel, query }) {
+function BuyLink(props) {
   var urls = {
-    FragranceNet: 'https://www.fragrancenet.com/search?q=' + query + '&utm_source=thedrydown',
-    ScentSplit: 'https://www.scentsplit.com/search?q=' + query + '&ref=thedrydown',
-    Amazon: 'https://www.amazon.com/s?k=' + query + '&tag=thedrydown-20',
-    Sephora: 'https://www.sephora.com/search?keyword=' + query + '&utm_source=thedrydown',
-    Notino: 'https://www.notino.com/search/?q=' + query + '&utm_source=thedrydown',
+    FragranceNet: 'https://www.fragrancenet.com/search?q=' + props.query + '&utm_source=thedrydown',
+    ScentSplit: 'https://www.scentsplit.com/search?q=' + props.query + '&ref=thedrydown',
+    Amazon: 'https://www.amazon.com/s?k=' + props.query + '&tag=thedrydown-20',
+    Sephora: 'https://www.sephora.com/search?keyword=' + props.query + '&utm_source=thedrydown',
+    Notino: 'https://www.notino.com/search/?q=' + props.query + '&utm_source=thedrydown',
   };
   return (
-    <a href={urls[name]} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 10, background: '#FFFFFF', border: '1px solid #E8E4ED', textDecoration: 'none', transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)' }}>
-      <span style={{ fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>{name}</span>
-      <span style={{ fontSize: 11, color: '#9B8EC4' }}>{sublabel}</span>
+    <a href={urls[props.name]} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderRadius: 10, background: '#FFFFFF', border: '1px solid #E8E4ED', textDecoration: 'none' }}>
+      <span style={{ fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>{props.name}</span>
+      <span style={{ fontSize: 11, color: '#9B8EC4' }}>{props.sublabel}</span>
     </a>
   );
 }
@@ -91,7 +102,9 @@ export default function ScannerPage() {
 
   var handleFile = useCallback(function(file) {
     if (!file || !file.type.startsWith('image/')) return;
-    setResult(null); setError(null); setImageFile(file);
+    setResult(null);
+    setError(null);
+    setImageFile(file);
     var r = new FileReader();
     r.onload = function(e) { setImage(e.target.result); };
     r.readAsDataURL(file);
@@ -99,7 +112,9 @@ export default function ScannerPage() {
 
   var analyze = async function() {
     if (!imageFile) return;
-    setLoading(true); setError(null); setResult(null);
+    setLoading(true);
+    setError(null);
+    setResult(null);
     try {
       setPhase('Reading the label...');
       var base64 = await new Promise(function(resolve) {
@@ -115,8 +130,9 @@ export default function ScannerPage() {
       var data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to identify');
       if (data.confidence === 'none' || data.brand === 'unknown') {
-        setError("Couldn't identify this fragrance. Try a clearer photo showing the label text.");
-        setLoading(false); return;
+        setError("Could not identify this fragrance. Try a clearer photo showing the label text.");
+        setLoading(false);
+        return;
       }
       setPhase('Searching 1,025 fragrances...');
       await new Promise(function(r) { setTimeout(r, 500); });
@@ -134,34 +150,36 @@ export default function ScannerPage() {
       setError('Something went wrong. Please try again.');
       console.error(err);
     }
-    setLoading(false); setPhase('');
+    setLoading(false);
+    setPhase('');
   };
 
-  var reset = function() { setImage(null); setImageFile(null); setResult(null); setError(null); setPhase(''); };
+  var reset = function() {
+    setImage(null);
+    setImageFile(null);
+    setResult(null);
+    setError(null);
+    setPhase('');
+  };
+
   var p = result ? result.perfume : null;
   var searchQuery = p ? encodeURIComponent(p.name + ' ' + p.brand) : (result && result.identified ? encodeURIComponent(result.identified.fragrance + ' ' + result.identified.brand) : '');
-
-  var NAV_LINKS = [
-    { label: 'DIRECTORY', href: '/' },
-    { label: 'BRANDS', href: '/brands' },
-    { label: 'NOTES', href: '/notes' },
-    { label: 'ABOUT', href: '/about' },
-  ];
 
   return (
     <div style={{ minHeight: '100vh' }}>
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', borderBottom: '1px solid #E8E4ED' }}>
         <a href="/" style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, fontWeight: 400, color: '#1A1A1A', textDecoration: 'none' }}>the <em style={{ fontStyle: 'italic', color: '#9B8EC4' }}>dry</em> down</a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          {NAV_LINKS.map(function(l) {
-            return <a key={l.label} href={l.href} style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#78716C', textDecoration: 'none', textTransform: 'uppercase' }}>{l.label}</a>;
-          })}
-          <a href="/scanner" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#9B8EC4', textDecoration: 'none', textTransform: 'uppercase', padding: '6px 16px', border: '1.5px solid #9B8EC4', borderRadius: 6 }}>SCANNER</a>
-          <a href="/feedback" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#FFFFFF', textDecoration: 'none', textTransform: 'uppercase', padding: '6px 16px', background: '#1A1A1A', borderRadius: 6 }}>FEEDBACK</a>
+          <a href="/" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#78716C', textDecoration: 'none', textTransform: 'uppercase' }}>Directory</a>
+          <a href="/brands" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#78716C', textDecoration: 'none', textTransform: 'uppercase' }}>Brands</a>
+          <a href="/notes" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#78716C', textDecoration: 'none', textTransform: 'uppercase' }}>Notes</a>
+          <a href="/about" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#78716C', textDecoration: 'none', textTransform: 'uppercase' }}>About</a>
+          <a href="/scanner" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#9B8EC4', textDecoration: 'none', textTransform: 'uppercase', padding: '6px 16px', border: '1.5px solid #9B8EC4', borderRadius: 6 }}>Scanner</a>
+          <a href="/feedback" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: '#FFFFFF', textDecoration: 'none', textTransform: 'uppercase', padding: '6px 16px', background: '#1A1A1A', borderRadius: 6 }}>Feedback</a>
         </div>
       </nav>
 
-      <main className="animate-fade-up" style={{ maxWidth: 800, margin: '0 auto', padding: '40px 32px' }}>
+      <main style={{ maxWidth: 800, margin: '0 auto', padding: '40px 32px' }}>
         <a href="/" style={{ display: 'inline-block', fontSize: 10, fontWeight: 500, letterSpacing: '0.16em', color: '#A8A29E', textTransform: 'uppercase', textDecoration: 'none', marginBottom: 28 }}>Back to Directory</a>
 
         <div style={{ marginBottom: 40 }}>
@@ -170,12 +188,12 @@ export default function ScannerPage() {
         </div>
 
         {!image && (
-          <div className="animate-fade-up"
+          <div
             onDragOver={function(e) { e.preventDefault(); setDragOver(true); }}
             onDragLeave={function() { setDragOver(false); }}
             onDrop={function(e) { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
             onClick={function() { fileRef.current && fileRef.current.click(); }}
-            style={{ border: '2px dashed ' + (dragOver ? '#9B8EC4' : '#D4D0DC'), borderRadius: 14, padding: '52px 32px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(155,142,196,0.06)' : '#FFFFFF', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            style={{ border: '2px dashed ' + (dragOver ? '#9B8EC4' : '#D4D0DC'), borderRadius: 14, padding: '52px 32px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(155,142,196,0.06)' : '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin: '0 auto 14px', display: 'block', opacity: 0.4 }}>
               <rect x="4" y="8" width="32" height="24" rx="3" stroke="#1A1A1A" strokeWidth="1.5" fill="none"/>
               <circle cx="20" cy="20" r="6" stroke="#1A1A1A" strokeWidth="1.5" fill="none"/>
@@ -189,18 +207,18 @@ export default function ScannerPage() {
         )}
 
         {image && !result && (
-          <div className="animate-fade-up">
+          <div>
             <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid #E8E4ED', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <img src={image} alt="Uploaded" style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'cover' }} />
               {loading && (
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
                   <div style={{ fontSize: 12, color: '#9B8EC4', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>{phase}</div>
                 </div>
               )}
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={reset} style={{ flex: 1, padding: 13, borderRadius: 10, border: '1px solid #E8E4ED', background: '#FFFFFF', color: '#78716C', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Retake</button>
-              <button onClick={analyze} disabled={loading} style={{ flex: 2, padding: 13, borderRadius: 10, border: 'none', background: loading ? '#E8E4ED' : '#1A1A1A', color: loading ? '#78716C' : '#FFFFFF', fontSize: 13, fontWeight: 500, cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit', boxShadow: loading ? 'none' : '0 2px 8px rgba(26,26,26,0.15)' }}>
+              <button onClick={analyze} disabled={loading} style={{ flex: 2, padding: 13, borderRadius: 10, border: 'none', background: loading ? '#E8E4ED' : '#1A1A1A', color: loading ? '#78716C' : '#FFFFFF', fontSize: 13, fontWeight: 500, cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit' }}>
                 {loading ? 'Analyzing...' : 'Identify fragrance'}
               </button>
             </div>
@@ -208,14 +226,14 @@ export default function ScannerPage() {
         )}
 
         {error && (
-          <div className="animate-fade-up" style={{ background: 'rgba(220,120,120,0.04)', border: '1px solid rgba(220,120,120,0.3)', borderRadius: 14, padding: 22, marginBottom: 14 }}>
+          <div style={{ background: 'rgba(220,120,120,0.04)', border: '1px solid rgba(220,120,120,0.3)', borderRadius: 14, padding: 22, marginBottom: 14 }}>
             <p style={{ fontSize: 13, color: '#C85050', marginBottom: 12, lineHeight: 1.6 }}>{error}</p>
             <button onClick={reset} style={{ padding: '8px 16px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(220,120,120,0.3)', color: '#C85050', fontSize: 12, cursor: 'pointer' }}>Try another photo</button>
           </div>
         )}
 
         {result && p && (
-          <div className="animate-fade-up">
+          <div>
             <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', marginBottom: 40 }}>
               <div style={{ width: 140, height: 180, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid #E8E4ED' }}>
                 <img src={image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -231,9 +249,9 @@ export default function ScannerPage() {
                 <h2 style={{ fontFamily: "'EB Garamond', serif", fontSize: 36, fontWeight: 400, color: '#1A1A1A', margin: '0 0 6px', lineHeight: 1.1 }}>{p.name}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
                   <a href="/brands" style={{ fontSize: 14, color: '#78716C', textDecoration: 'underline', textUnderlineOffset: 2 }}>{p.brand}</a>
-                  <span style={{ color: '#D4D0DC' }}>.</span>
+                  <span style={{ color: '#D4D0DC' }}>|</span>
                   <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, color: '#9B8EC4', fontWeight: 500 }}>AED {p.priceLow}-{p.priceHigh}</span>
-                  <span style={{ color: '#D4D0DC' }}>.</span>
+                  <span style={{ color: '#D4D0DC' }}>|</span>
                   <StarRating rating={p.rating} />
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -282,10 +300,9 @@ export default function ScannerPage() {
               </div>
             </div>
 
-            <a href={'/perfume/' + result.slug} style={{ display: 'block', textAlign: 'center', padding: 14, borderRadius: 10, background: '#1A1A1A', color: '#FFFFFF', fontSize: 13, fontWeight: 500, textDecoration: 'none', marginBottom: 12, boxShadow: '0 2px 8px rgba(26,26,26,0.15)' }}>
+            <a href={'/perfume/' + result.slug} style={{ display: 'block', textAlign: 'center', padding: 14, borderRadius: 10, background: '#1A1A1A', color: '#FFFFFF', fontSize: 13, fontWeight: 500, textDecoration: 'none', marginBottom: 12 }}>
               View full profile on The Dry Down
             </a>
-
             <button onClick={reset} style={{ width: '100%', padding: 14, borderRadius: 10, border: '1px solid #E8E4ED', background: '#FFFFFF', color: '#78716C', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
               Scan another fragrance
             </button>
@@ -293,16 +310,11 @@ export default function ScannerPage() {
         )}
 
         {result && result.partial && (
-          <div className="animate-fade-up">
+          <div>
             <div style={{ background: 'rgba(155,142,196,0.04)', border: '1px solid rgba(155,142,196,0.25)', borderRadius: 14, padding: 22, marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <div>
-                  <p style={{ fontSize: 14, color: '#1A1A1A', margin: '0 0 4px' }}>Identified as <strong>{result.identified.brand} {result.identified.fragrance}</strong>{result.identified.concentration !== 'unknown' ? ' (' + result.identified.concentration + ')' : ''}</p>
-                  <p style={{ fontSize: 12, color: '#9B8EC4', margin: 0 }}>This fragrance is not in our database yet but we have automatically logged your request. We will add it soon!</p>
-                </div>
-              </div>
+              <p style={{ fontSize: 14, color: '#1A1A1A', margin: '0 0 4px' }}>Identified as <strong>{result.identified.brand} {result.identified.fragrance}</strong>{result.identified.concentration !== 'unknown' ? ' (' + result.identified.concentration + ')' : ''}</p>
+              <p style={{ fontSize: 12, color: '#9B8EC4', margin: 0 }}>This fragrance is not in our database yet but we have automatically logged your request. We will add it soon!</p>
             </div>
-
             <div style={{ marginBottom: 24 }}>
               <h3 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1A1A1A', margin: '0 0 16px' }}>Where to Buy</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -311,7 +323,6 @@ export default function ScannerPage() {
                 <BuyLink name="Sephora" sublabel="Rewards" query={searchQuery} />
               </div>
             </div>
-
             <button onClick={reset} style={{ width: '100%', padding: 14, borderRadius: 10, border: '1px solid #E8E4ED', background: '#FFFFFF', color: '#78716C', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
               Scan another fragrance
             </button>
@@ -322,7 +333,7 @@ export default function ScannerPage() {
       <footer style={{ textAlign: 'center', padding: '32px 16px', borderTop: '1px solid #E8E4ED', marginTop: 40 }}>
         <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#1A1A1A', marginBottom: 4 }}>the <em style={{ color: '#9B8EC4' }}>dry</em> down</div>
         <div style={{ fontSize: 11, color: '#A8A29E', marginBottom: 4 }}>A fragrance directory built for the community.</div>
-        <div style={{ fontSize: 11, color: '#A8A29E' }}>1000+ fragrances. 140+ brands. Dubai</div>
+        <div style={{ fontSize: 11, color: '#A8A29E' }}>1000+ fragrances | 140+ brands | Dubai</div>
         <div style={{ fontSize: 10, color: '#D4D0DC', marginTop: 8 }}>2026 The Dry Down</div>
       </footer>
     </div>
