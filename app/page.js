@@ -365,7 +365,7 @@ export default function Home() {
         rating: newReview.rating,
         title: newReview.title,
         body: newReview.body,
-      }).select();
+      });
       if (error) throw error;
       if (data && data[0]) {
         setUserReviews(prev => [{ user: data[0].user_name, rating: data[0].rating, perfume: data[0].perfume_name, title: data[0].title, body: data[0].body, date: "Just now", helpful: 0, id: data[0].id }, ...prev]);
