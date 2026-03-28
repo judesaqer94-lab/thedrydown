@@ -1,11 +1,12 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
 import { PERFUMES, BRAND_TYPES } from '../../data/perfumes';
+import { supabase } from '../../lib/supabase';
 
-function findPerfume(brand, fragrance) {
-  const b = (brand || '').toLowerCase().trim();
-  const f = (fragrance || '').toLowerCase().trim();
-  let match = PERFUMES.find(function(p) { return p.brand.toLowerCase() === b && p.name.toLowerCase() === f; });
+function findLocalPerfume(brand, fragrance) {
+  var b = (brand || '').toLowerCase().trim();
+  var f = (fragrance || '').toLowerCase().trim();
+  var match = PERFUMES.find(function(p) { return p.brand.toLowerCase() === b && p.name.toLowerCase() === f; });
   if (match) return match;
   match = PERFUMES.find(function(p) { return p.name.toLowerCase() === f && p.brand.toLowerCase().includes(b); });
   if (match) return match;
@@ -15,6 +16,54 @@ function findPerfume(brand, fragrance) {
   if (match) return match;
   match = PERFUMES.find(function(p) { return f.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(f); });
   return match || null;
+}
+
+async function findSupabasePerfume(brand, fragrance) {
+  var b = (brand || '').toLowerCase().trim();
+  var f = (fragrance || '').toLowerCase().trim();
+  try {
+    var res = await supabase.from('perfumes').select('*');
+    if (!res.data) return null;
+    var all = res.data;
+    var match = all.find(function(p) { return p.brand.toLowerCase() === b && p.name.toLowerCase() === f; });
+    if (match) return convertSupabasePerfume(match);
+    match = all.find(function(p) { return p.name.toLowerCase() === f && p.brand.toLowerCase().includes(b); });
+    if (match) return convertSupabasePerfume(match);
+    match = all.find(function(p) { return (p.brand.toLowerCase().includes(b) || b.includes(p.brand.toLowerCase())) && (p.name.toLowerCase().includes(f) || f.includes(p.name.toLowerCase())); });
+    if (match) return convertSupabasePerfume(match);
+    match = all.find(function(p) { return p.name.toLowerCase() === f; });
+    if (match) return convertSupabasePerfume(match);
+    match = all.find(function(p) { return f.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(f); });
+    if (match) return convertSupabasePerfume(match);
+    return null;
+  } catch (err) {
+    console.error('Supabase search error:', err);
+    return null;
+  }
+}
+
+function convertSupabasePerfume(p) {
+  var idx = p.id || 0;
+  return {
+    id: p.id,
+    name: p.name,
+    brand: p.brand,
+    year: p.year,
+    gender: p.gender || 'Unisex',
+    concentration: p.concentration || 'EDP',
+    family: p.family || '',
+    priceLow: p.price_low || 0,
+    priceHigh: p.price_high || 0,
+    notes: [].concat(
+      (p.top_notes || '').split(',').map(function(n) { return n.trim(); }).filter(Boolean).map(function(n) { return { name: n, position: 'top', strength: 70 + (idx * 7 + n.length * 3) % 25 }; }),
+      (p.heart_notes || '').split(',').map(function(n) { return n.trim(); }).filter(Boolean).map(function(n) { return { name: n, position: 'heart', strength: 55 + (idx * 5 + n.length * 7) % 30 }; }),
+      (p.base_notes || '').split(',').map(function(n) { return n.trim(); }).filter(Boolean).map(function(n) { return { name: n, position: 'base', strength: 50 + (idx * 3 + n.length * 11) % 35 }; })
+    ),
+    accords: (p.main_accords || '').split(',').map(function(a) { return a.trim(); }).filter(Boolean).map(function(a, i) { return { name: a, strength: Math.max(30, 90 - i * 12 + (a.length * 3) % 8) }; }),
+    rating: Number(p.rating) || 4.0,
+    brandType: p.brand_type || 'Unknown',
+    image_url: p.image_url || null
+  };
 }
 
 function makeSlug(perfume) {
@@ -47,7 +96,7 @@ function StarRating(props) {
   for (var i = 0; i < full; i++) stars += '\u2605';
   if (half) stars += '\u00BD';
   for (var j = 0; j < empty; j++) stars += '\u2606';
-  return React.createElement('span', { style: { color: '#9B8EC4', fontSize: 16, letterSpacing: 1 } }, stars);
+  return <span style={{ color: '#9B8EC4', fontSize: 16, letterSpacing: 1 }}>{stars}</span>;
 }
 
 function NoteBar(props) {
@@ -134,9 +183,14 @@ export default function ScannerPage() {
         setLoading(false);
         return;
       }
-      setPhase('Searching 1,025 fragrances...');
-      await new Promise(function(r) { setTimeout(r, 500); });
-      var match = findPerfume(data.brand, data.fragrance);
+      setPhase('Searching local database...');
+      await new Promise(function(r) { setTimeout(r, 300); });
+      var match = findLocalPerfume(data.brand, data.fragrance);
+      if (!match) {
+        setPhase('Searching full database...');
+        await new Promise(function(r) { setTimeout(r, 300); });
+        match = await findSupabasePerfume(data.brand, data.fragrance);
+      }
       if (match) {
         var topNotes = match.notes.filter(function(n) { return n.position === 'top'; });
         var heartNotes = match.notes.filter(function(n) { return n.position === 'heart'; });
@@ -243,7 +297,6 @@ export default function ScannerPage() {
                   <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(232,168,124,0.2)', color: '#D4824A', border: '1px solid rgba(232,168,124,0.3)' }}>{p.family}</span>
                   <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{p.concentration}</span>
                   <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{p.gender}</span>
-                  {BRAND_TYPES[p.brand] && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{BRAND_TYPES[p.brand]}</span>}
                   <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{p.year}</span>
                 </div>
                 <h2 style={{ fontFamily: "'EB Garamond', serif", fontSize: 36, fontWeight: 400, color: '#1A1A1A', margin: '0 0 6px', lineHeight: 1.1 }}>{p.name}</h2>
@@ -253,10 +306,6 @@ export default function ScannerPage() {
                   <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, color: '#9B8EC4', fontWeight: 500 }}>AED {p.priceLow}-{p.priceHigh}</span>
                   <span style={{ color: '#D4D0DC' }}>|</span>
                   <StarRating rating={p.rating} />
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#78716C', border: '1px solid #E8E4ED' }}>Longevity: Long Lasting</span>
-                  <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#78716C', border: '1px solid #E8E4ED' }}>Sillage: Strong</span>
                 </div>
               </div>
             </div>
