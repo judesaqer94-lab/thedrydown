@@ -24,10 +24,11 @@ function makeSlug(perfume) {
 }
 
 function logMiss(identified) {
-  fetch('/api/identify', {
+  fetch('https://script.google.com/macros/s/AKfycbxvSNZV1aDcw90DGPnFWUDosW4RDI7SQrRLI2DnxFCsx4fFNZ-PMw0u4mm2Rc1h13FmoQ/exec', {
     method: 'POST',
+    mode: 'no-cors',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ logMiss: true, brand: identified.brand, fragrance: identified.fragrance, concentration: identified.concentration, confidence: identified.confidence }),
+    body: JSON.stringify({ brand: identified.brand, fragrance: identified.fragrance, concentration: identified.concentration, confidence: identified.confidence, timestamp: new Date().toISOString() }),
   }).catch(function() {});
 }
 
@@ -162,16 +163,13 @@ export default function ScannerPage() {
       </nav>
 
       <main className="animate-fade-up" style={{ maxWidth: 800, margin: '0 auto', padding: '40px 32px' }}>
-        {/* BACK LINK */}
         <a href="/" style={{ display: 'inline-block', fontSize: 10, fontWeight: 500, letterSpacing: '0.16em', color: '#A8A29E', textTransform: 'uppercase', textDecoration: 'none', marginBottom: 28 }}>← Back to Directory</a>
 
-        {/* HEADER */}
         <div style={{ marginBottom: 40 }}>
           <h1 style={{ fontFamily: "'EB Garamond', serif", fontSize: 48, fontWeight: 400, color: '#1A1A1A', margin: '0 0 8px' }}>Fragrance <em style={{ fontStyle: 'italic', color: '#9B8EC4', fontWeight: 400 }}>scanner</em></h1>
           <p style={{ fontSize: 13, color: '#A8A29E', margin: 0 }}>Take a photo of any perfume bottle · Instantly get notes, accords, and where to buy</p>
         </div>
 
-        {/* UPLOAD ZONE */}
         {!image && (
           <div className="animate-fade-up"
             onDragOver={function(e) { e.preventDefault(); setDragOver(true); }}
@@ -191,164 +189,10 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {/* IMAGE PREVIEW */}
         {image && !result && (
           <div className="animate-fade-up">
             <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid #E8E4ED', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <img src={image} alt="Uploaded" style={{ width: '100%', display: 'block', maxHeight: 400, objectFit: 'cover' }} />
               {loading && (
                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ position: 'absolute', left: '8%', right: '8%', height: 2, background: 'linear-gradient(90deg, transparent, #9B8EC4, transparent)', animation: 'scanLine 2.2s ease-in-out infinite', boxShadow: '0 0 16px rgba(155,142,196,0.3)' }} />
-                  <div style={{ fontSize: 12, color: '#9B8EC4', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, animation: 'pulse 1.5s ease infinite' }}>{phase}</div>
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={reset} style={{ flex: 1, padding: 13, borderRadius: 10, border: '1px solid #E8E4ED', background: '#FFFFFF', color: '#78716C', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Retake</button>
-              <button onClick={analyze} disabled={loading} style={{ flex: 2, padding: 13, borderRadius: 10, border: 'none', background: loading ? '#E8E4ED' : '#1A1A1A', color: loading ? '#78716C' : '#FFFFFF', fontSize: 13, fontWeight: 500, cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit', boxShadow: loading ? 'none' : '0 2px 8px rgba(26,26,26,0.15)' }}>
-                {loading ? 'Analyzing\u2026' : 'Identify fragrance'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ERROR */}
-        {error && (
-          <div className="animate-fade-up" style={{ background: 'rgba(220,120,120,0.04)', border: '1px solid rgba(220,120,120,0.3)', borderRadius: 14, padding: 22, marginBottom: 14 }}>
-            <p style={{ fontSize: 13, color: '#C85050', marginBottom: 12, lineHeight: 1.6 }}>{error}</p>
-            <button onClick={reset} style={{ padding: '8px 16px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(220,120,120,0.3)', color: '#C85050', fontSize: 12, cursor: 'pointer' }}>Try another photo</button>
-          </div>
-        )}
-
-        {/* RESULT — FOUND */}
-        {result && p && (
-          <div className="animate-fade-up">
-            {/* Hero section — matches perfume detail page layout */}
-            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', marginBottom: 40 }}>
-              {/* Uploaded photo as thumbnail */}
-              <div style={{ width: 140, height: 180, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid #E8E4ED' }}>
-                <img src={image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                {/* Tags */}
-                <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(232,168,124,0.2)', color: '#D4824A', border: '1px solid rgba(232,168,124,0.3)' }}>{p.family}</span>
-                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{p.concentration}</span>
-                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{p.gender}</span>
-                  {BRAND_TYPES[p.brand] && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{BRAND_TYPES[p.brand]}</span>}
-                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F5F2F7', color: '#78716C', border: '1px solid #E8E4ED' }}>{p.year}</span>
-                </div>
-                {/* Name */}
-                <h2 style={{ fontFamily: "'EB Garamond', serif", fontSize: 36, fontWeight: 400, color: '#1A1A1A', margin: '0 0 6px', lineHeight: 1.1 }}>{p.name}</h2>
-                {/* Brand · Price · Stars */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
-                  <a href="/brands" style={{ fontSize: 14, color: '#78716C', textDecoration: 'underline', textUnderlineOffset: 2 }}>{p.brand}</a>
-                  <span style={{ color: '#D4D0DC' }}>·</span>
-                  <span style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, color: '#9B8EC4', fontWeight: 500 }}>AED {p.priceLow}–{p.priceHigh}</span>
-                  <span style={{ color: '#D4D0DC' }}>·</span>
-                  <StarRating rating={p.rating} />
-                </div>
-                {/* Longevity / Sillage */}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#78716C', border: '1px solid #E8E4ED' }}>Longevity: Long Lasting</span>
-                  <span style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#78716C', border: '1px solid #E8E4ED' }}>Sillage: Strong</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Accords + Notes side by side */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginBottom: 48 }}>
-              <div>
-                <h3 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1A1A1A', margin: '0 0 20px' }}>Main Accords</h3>
-                {p.accords.slice(0, 6).map(function(a, i) { return <AccordBar key={i} name={a.name} strength={a.strength} />; })}
-              </div>
-              <div>
-                <h3 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1A1A1A', margin: '0 0 20px' }}>Fragrance Notes</h3>
-                {result.topNotes.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: '#4ECDC4', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Top</div>
-                    {result.topNotes.map(function(n, i) { return <NoteBar key={i} name={n.name} strength={n.strength} color="#4ECDC4" />; })}
-                  </div>
-                )}
-                {result.heartNotes.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: '#E8A87C', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Heart</div>
-                    {result.heartNotes.map(function(n, i) { return <NoteBar key={i} name={n.name} strength={n.strength} color="#E8A87C" />; })}
-                  </div>
-                )}
-                {result.baseNotes.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: '#8B6040', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Base</div>
-                    {result.baseNotes.map(function(n, i) { return <NoteBar key={i} name={n.name} strength={n.strength} color="#8B6040" />; })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Where to Buy */}
-            <div style={{ marginBottom: 40 }}>
-              <h3 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1A1A1A', margin: '0 0 16px' }}>Where to Buy</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-                <BuyLink name="FragranceNet" sublabel="Best Price" query={searchQuery} />
-                <BuyLink name="ScentSplit" sublabel="Decants" query={searchQuery} />
-                <BuyLink name="Amazon" sublabel="Fast Ship" query={searchQuery} />
-                <BuyLink name="Sephora" sublabel="Rewards" query={searchQuery} />
-                <BuyLink name="Notino" sublabel="Global" query={searchQuery} />
-              </div>
-            </div>
-
-            {/* View full profile */}
-            <a href={'/perfume/' + result.slug} style={{ display: 'block', textAlign: 'center', padding: 14, borderRadius: 10, background: '#1A1A1A', color: '#FFFFFF', fontSize: 13, fontWeight: 500, textDecoration: 'none', marginBottom: 12, boxShadow: '0 2px 8px rgba(26,26,26,0.15)' }}>
-              View full profile on The Dry Down →
-            </a>
-
-            <button onClick={reset} style={{ width: '100%', padding: 14, borderRadius: 10, border: '1px solid #E8E4ED', background: '#FFFFFF', color: '#78716C', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Scan another fragrance
-            </button>
-          </div>
-        )}
-
-        {/* RESULT — NOT FOUND */}
-        {result && result.partial && (
-          <div className="animate-fade-up">
-            <div style={{ background: 'rgba(155,142,196,0.04)', border: '1px solid rgba(155,142,196,0.25)', borderRadius: 14, padding: 22, marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontSize: 18 }}>✦</span>
-                <div>
-                  <p style={{ fontSize: 14, color: '#1A1A1A', margin: '0 0 4px' }}>Identified as <strong>{result.identified.brand} {result.identified.fragrance}</strong>{result.identified.concentration !== 'unknown' ? ' (' + result.identified.concentration + ')' : ''}</p>
-                  <p style={{ fontSize: 12, color: '#9B8EC4', margin: 0 }}>This fragrance isn't in our database yet — but we've automatically logged your request. We'll add it soon!</p>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1A1A1A', margin: '0 0 16px' }}>Where to Buy</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                <BuyLink name="FragranceNet" sublabel="Best Price" query={searchQuery} />
-                <BuyLink name="Amazon" sublabel="Fast Ship" query={searchQuery} />
-                <BuyLink name="Sephora" sublabel="Rewards" query={searchQuery} />
-              </div>
-            </div>
-
-            <button onClick={reset} style={{ width: '100%', padding: 14, borderRadius: 10, border: '1px solid #E8E4ED', background: '#FFFFFF', color: '#78716C', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Scan another fragrance
-            </button>
-          </div>
-        )}
-      </main>
-
-      {/* FOOTER */}
-      <footer style={{ textAlign: 'center', padding: '32px 16px', borderTop: '1px solid #E8E4ED', marginTop: 40 }}>
-        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: '#1A1A1A', marginBottom: 4 }}>the <em style={{ color: '#9B8EC4' }}>dry</em> down</div>
-        <div style={{ fontSize: 11, color: '#A8A29E', marginBottom: 4 }}>A fragrance directory built for the community.</div>
-        <div style={{ fontSize: 11, color: '#A8A29E' }}>1000+ fragrances · 140+ brands · Dubai</div>
-        <div style={{ fontSize: 10, color: '#D4D0DC', marginTop: 8 }}>© 2026 The Dry Down</div>
-      </footer>
-
-      <style>{'\
-        @keyframes scanLine { 0% { top: 0; } 50% { top: 92%; } 100% { top: 0; } }\
-        @keyframes pulse { 0%,100% { opacity:.4; } 50% { opacity:1; } }\
-      '}</style>
-    </div>
-  );
-}
+                  <div style={{ position: 'absolute', left: '8%', right: '8%', height: 2, background: 'linear-gradient(90deg, transparent, #9B8EC4, transparent)', animation: 'scanLine 2.2s ease-in-out infinite', boxShadow: '0 0 16px rgba(155,1
