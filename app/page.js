@@ -474,6 +474,7 @@ export default function Home() {
             <a href="/brands" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
             <a href="/notes" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
             <a href="/about" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>About</a>
+            <a href="/scanner" className="text-xs uppercase tracking-widest font-medium transition-colors" style={{textDecoration:'none', color:'#9B8EC4', border:'1.5px solid #9B8EC4', padding:'6px 16px', borderRadius:'6px'}}>Scanner</a>    
             <a href="/feedback" className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity" style={{textDecoration:'none', color:'#FAF8F5'}}>Feedback</a>
             {isAdmin && <button onClick={() => nav("admin")} className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors relative">
               Admin{pending.length > 0 && <span className="absolute -top-1 -right-3 bg-accent text-paper text-[9px] font-bold w-4 h-4 flex items-center justify-center">{pending.length}</span>}
