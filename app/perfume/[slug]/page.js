@@ -163,12 +163,10 @@ export default async function PerfumePage({ params }) {
     );
   }
 
-  // Fetch reviews for this perfume
-  const { data: reviews } = await supabase.from('reviews').select('*').eq('perfume', perfume.name).order('created_at', { ascending: false });
+  // FIX: Changed .eq('perfume', ...) to .eq('perfume_name', ...) to match actual column name
+  const { data: reviews } = await supabase.from('reviews').select('*').eq('perfume_name', perfume.name).order('created_at', { ascending: false });
 
   // ═══ SIMILARITY ENGINE ═══
-  // Multi-dimensional scoring: accords (35%), notes by layer (25%), 
-  // seasons (15%), occasions (10%), performance (5%), gender (5%), family (5%)
   const similar = findSimilarPerfumes(perfume, allPerfumes || []);
 
   // Generate structured data for Google
