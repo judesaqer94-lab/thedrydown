@@ -359,7 +359,7 @@ export default function Home() {
   const submitReview = useCallback(async () => {
     if (!newReview.title || !newReview.body || !newReview.perfume) return;
     try {
-      const { data, error } = await supabase.from('reviews').insert({
+      const { error } = await supabase.from('reviews').insert({
         user_name: newReview.name || "Anonymous",
         perfume_name: newReview.perfume,
         rating: newReview.rating,
@@ -367,9 +367,7 @@ export default function Home() {
         body: newReview.body,
       });
       if (error) throw error;
-      if (data && data[0]) {
-        setUserReviews(prev => [{ user: data[0].user_name, rating: data[0].rating, perfume: data[0].perfume_name, title: data[0].title, body: data[0].body, date: "Just now", helpful: 0, id: data[0].id }, ...prev]);
-      }
+      setUserReviews(prev => [{ user: newReview.name || "Anonymous", rating: newReview.rating, perfume: newReview.perfume, title: newReview.title, body: newReview.body, date: "Just now", helpful: 0 }, ...prev]);
       setNewReview({ name: "", rating: 5, title: "", body: "", perfume: "" });
       setShowWriteReview(false);
       showToast("Review published!");
@@ -802,7 +800,8 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-faint">
-              <button onClick={() => setShowWriteReview(!showWriteReview); setNewReview(prev => ({...prev, perfume: selected.name}))} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
+              {/* FIX: wrapped multiple statements in curly braces */}
+              <button onClick={() => { setShowWriteReview(!showWriteReview); setNewReview(prev => ({...prev, perfume: selected ? selected.name : ''})); }} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
               <div className="flex gap-2 ml-auto">
                 {[["helpful", "Most Helpful"], ["rating", "Top Rated"]].map(([v, l]) => (
                   <button key={v} onClick={() => setReviewSort(v)}
