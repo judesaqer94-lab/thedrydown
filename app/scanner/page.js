@@ -3,39 +3,153 @@ import { useState, useRef, useCallback } from 'react';
 import { PERFUMES, BRAND_TYPES } from '../../data/perfumes';
 import { supabase } from '../../lib/supabase';
 
-function findLocalPerfume(brand, fragrance) {
-  var b = (brand || '').toLowerCase().trim();
-  var f = (fragrance || '').toLowerCase().trim();
-  var match = PERFUMES.find(function(p) { return p.brand.toLowerCase() === b && p.name.toLowerCase() === f; });
-  if (match) return match;
-  match = PERFUMES.find(function(p) { return p.name.toLowerCase() === f && p.brand.toLowerCase().includes(b); });
-  if (match) return match;
-  match = PERFUMES.find(function(p) { return (p.brand.toLowerCase().includes(b) || b.includes(p.brand.toLowerCase())) && (p.name.toLowerCase().includes(f) || f.includes(p.name.toLowerCase())); });
-  if (match) return match;
-  match = PERFUMES.find(function(p) { return p.name.toLowerCase() === f; });
-  if (match) return match;
-  match = PERFUMES.find(function(p) { return f.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(f); });
-  return match || null;
+// ═══ SMART MATCHING ═══
+// Handles accents & spacing (Nice Bergamote = Nice Bergamote)
+// but treats different concentrations as different products (EDP ≠ Extrait)
+
+function normalize(str) {
+  return (str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents: é→e, à→a
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Keep spaces for word matching
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-async function findSupabasePerfume(brand, fragrance) {
-  var b = (brand || '').toLowerCase().trim();
-  var f = (fragrance || '').toLowerCase().trim();
+// Concentration keywords that distinguish different products
+var CONCENTRATION_KEYWORDS = ['extrait', 'parfum', 'edp', 'edt', 'eau de parfum', 'eau de toilette', 'eau de cologne', 'edc', 'elixir', 'intense', 'absolue', 'absolu'];
+
+// Strip concentration words from a fragrance name for core name comparison
+function coreName(str) {
+  var n = normalize(str);
+  CONCENTRATION_KEYWORDS.forEach(function(kw) {
+    n = n.replace(new RegExp('\\b' + kw + '\\b', 'gi'), '');
+  });
+  return n.replace(/\s+/g, ' ').trim();
+}
+
+// Check if a name contains concentration-distinguishing words
+function extractConcentrationFromName(str) {
+  var n = normalize(str);
+  for (var i = 0; i < CONCENTRATION_KEYWORDS.length; i++) {
+    if (n.includes(CONCENTRATION_KEYWORDS[i])) return CONCENTRATION_KEYWORDS[i];
+  }
+  return null;
+}
+
+function nameScore(identified, dbName) {
+  var ni = normalize(identified);
+  var nd = normalize(dbName);
+  if (!ni || !nd) return 0;
+
+  // Exact match after normalization (handles accents, casing)
+  if (ni === nd) return 100;
+
+  // Core name match — strip concentration words and compare
+  var ci = coreName(identified);
+  var cd = coreName(dbName);
+  if (ci === cd) {
+    // Core names match, but check if concentration words differ
+    // e.g. "Baccarat Rouge 540 Extrait" vs "Baccarat Rouge 540" are different
+    var concI = extractConcentrationFromName(identified);
+    var concD = extractConcentrationFromName(dbName);
+    // If identified has a concentration word but DB doesn't (or vice versa), slight penalty
+    // If both have different concentration words, big penalty (different product)
+    if (concI && concD && concI !== concD) return 30; // Different concentrations = different product
+    if (concI && !concD) return 85; // Identified is more specific, DB is generic — likely match
+    if (!concI && concD) return 85; // DB is more specific — likely match
+    return 95; // Same core name, no conflicting concentration
+  }
+
+  // One contains the other (e.g. "Oud Wood" matches "Oud Wood" in DB)
+  if (ni.includes(nd) || nd.includes(ni)) {
+    // But check for concentration conflicts
+    var concI2 = extractConcentrationFromName(identified);
+    var concD2 = extractConcentrationFromName(dbName);
+    if (concI2 && concD2 && concI2 !== concD2) return 25;
+    return 80;
+  }
+
+  // Word overlap scoring for partial matches
+  var wordsI = ci.split(' ').filter(Boolean);
+  var wordsD = cd.split(' ').filter(Boolean);
+  var matches = 0;
+  for (var i = 0; i < wordsI.length; i++) {
+    for (var j = 0; j < wordsD.length; j++) {
+      if (wordsI[i] === wordsD[j]) { matches++; break; }
+    }
+  }
+  var total = Math.max(wordsI.length, wordsD.length);
+  return total > 0 ? Math.round((matches / total) * 75) : 0;
+}
+
+function brandScore(identified, dbBrand) {
+  var ni = normalize(identified);
+  var nd = normalize(dbBrand);
+  if (!ni || !nd) return 0;
+  if (ni === nd) return 100;
+  if (ni.includes(nd) || nd.includes(ni)) return 80;
+  // Common abbreviation handling
+  var wordsI = ni.split(' ').filter(Boolean);
+  var wordsD = nd.split(' ').filter(Boolean);
+  var matches = 0;
+  for (var i = 0; i < wordsI.length; i++) {
+    for (var j = 0; j < wordsD.length; j++) {
+      if (wordsI[i] === wordsD[j]) { matches++; break; }
+    }
+  }
+  var total = Math.max(wordsI.length, wordsD.length);
+  return total > 0 ? Math.round((matches / total) * 80) : 0;
+}
+
+function findBestMatch(brand, fragrance, perfumes, concentration) {
+  var bestMatch = null;
+  var bestScore = 0;
+
+  for (var i = 0; i < perfumes.length; i++) {
+    var p = perfumes[i];
+    var pBrand = p.brand || '';
+    var pName = p.name || '';
+    var pConc = (p.concentration || '').toLowerCase();
+
+    var ns = nameScore(fragrance, pName);
+    var bs = brandScore(brand, pBrand);
+
+    // Combined score — name matters most
+    var combined = (ns * 0.7) + (bs * 0.3);
+
+    // Bonus if both name and brand match well
+    if (ns >= 60 && bs >= 60) combined += 10;
+
+    // If the API identified a concentration and the DB has one, boost exact matches
+    if (concentration && pConc) {
+      var normConc = normalize(concentration);
+      var normPConc = normalize(pConc);
+      if (normConc === normPConc || normConc.includes(normPConc) || normPConc.includes(normConc)) {
+        combined += 5; // Boost for matching concentration
+      }
+    }
+
+    if (combined > bestScore) {
+      bestScore = combined;
+      bestMatch = p;
+    }
+  }
+
+  // Only return if we have a reasonable match (score > 50)
+  return bestScore > 50 ? bestMatch : null;
+}
+
+function findLocalPerfume(brand, fragrance, concentration) {
+  return findBestMatch(brand, fragrance, PERFUMES, concentration);
+}
+
+async function findSupabasePerfume(brand, fragrance, concentration) {
   try {
     var res = await supabase.from('perfumes').select('*');
-    if (!res.data) return null;
-    var all = res.data;
-    var match = all.find(function(p) { return p.brand.toLowerCase() === b && p.name.toLowerCase() === f; });
-    if (match) return convertSupabasePerfume(match);
-    match = all.find(function(p) { return p.name.toLowerCase() === f && p.brand.toLowerCase().includes(b); });
-    if (match) return convertSupabasePerfume(match);
-    match = all.find(function(p) { return (p.brand.toLowerCase().includes(b) || b.includes(p.brand.toLowerCase())) && (p.name.toLowerCase().includes(f) || f.includes(p.name.toLowerCase())); });
-    if (match) return convertSupabasePerfume(match);
-    match = all.find(function(p) { return p.name.toLowerCase() === f; });
-    if (match) return convertSupabasePerfume(match);
-    match = all.find(function(p) { return f.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(f); });
-    if (match) return convertSupabasePerfume(match);
-    return null;
+    if (!res.data || res.data.length === 0) return null;
+    var match = findBestMatch(brand, fragrance, res.data, concentration);
+    return match ? convertSupabasePerfume(match) : null;
   } catch (err) {
     console.error('Supabase search error:', err);
     return null;
@@ -67,8 +181,8 @@ function convertSupabasePerfume(p) {
 }
 
 function makeSlug(perfume) {
-  var name = perfume.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  var brand = perfume.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  var name = (perfume.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  var brand = (perfume.brand || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   return name + '-' + brand;
 }
 
@@ -185,11 +299,11 @@ export default function ScannerPage() {
       }
       setPhase('Searching local database...');
       await new Promise(function(r) { setTimeout(r, 300); });
-      var match = findLocalPerfume(data.brand, data.fragrance);
+      var match = findLocalPerfume(data.brand, data.fragrance, data.concentration);
       if (!match) {
         setPhase('Searching full database...');
         await new Promise(function(r) { setTimeout(r, 300); });
-        match = await findSupabasePerfume(data.brand, data.fragrance);
+        match = await findSupabasePerfume(data.brand, data.fragrance, data.concentration);
       }
       if (match) {
         var topNotes = match.notes.filter(function(n) { return n.position === 'top'; });
@@ -201,8 +315,8 @@ export default function ScannerPage() {
         setResult({ perfume: null, identified: data, partial: true });
       }
     } catch (err) {
+      console.error('Scanner error:', err);
       setError('Something went wrong. Please try again.');
-      console.error(err);
     }
     setLoading(false);
     setPhase('');
@@ -238,7 +352,7 @@ export default function ScannerPage() {
 
         <div style={{ marginBottom: 40 }}>
           <h1 style={{ fontFamily: "'EB Garamond', serif", fontSize: 48, fontWeight: 400, color: '#1A1A1A', margin: '0 0 8px' }}>Fragrance <em style={{ fontStyle: 'italic', color: '#9B8EC4', fontWeight: 400 }}>scanner</em></h1>
-          <p style={{ fontSize: 13, color: '#A8A29E', margin: 0 }}>Take a photo of any perfume bottle. Instantly get notes, accords, and where to buy</p>
+          <p style={{ fontSize: 13, color: '#A8A29E', margin: 0 }}>Take a photo of any perfume bottle · Instantly get notes, accords, and where to buy</p>
         </div>
 
         {!image && (
@@ -256,7 +370,8 @@ export default function ScannerPage() {
             </svg>
             <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 20, color: '#1A1A1A', marginBottom: 6 }}>Drop a photo or tap to upload</div>
             <div style={{ fontSize: 12, color: '#A8A29E' }}>Clear photo of the label works best</div>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={function(e) { handleFile(e.target.files[0]); }} style={{ display: 'none' }} />
+            {/* Removed capture="environment" so mobile users can choose camera OR photo library */}
+            <input ref={fileRef} type="file" accept="image/*" onChange={function(e) { handleFile(e.target.files[0]); }} style={{ display: 'none' }} />
           </div>
         )}
 
