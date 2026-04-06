@@ -46,13 +46,8 @@ const ACCORD_COLORS = {
 };
 
 const RETAILERS = [
-  { name: "FragranceNet", tag: "Best Price", url: "https://www.fragrancenet.com/search?q=Q&utm_source=thedrydown" },
-  { name: "ScentSplit", tag: "Decants", url: "https://www.scentsplit.com/search?q=Q&ref=thedrydown" },
-  { name: "Amazon", tag: "Fast Ship", url: "https://www.amazon.ae/s?k=Q&tag=thedrydown-20" },
-  { name: "Sephora", tag: "Rewards", url: "https://www.sephora.com/search?keyword=Q&utm_source=thedrydown" },
-  { name: "Notino", tag: "Global", url: "https://www.notino.com/search/?q=Q&utm_source=thedrydown" },
+  { name: "Buy", tag: "Amazon.ae", url: "https://www.amazon.ae/s?k=Q&tag=thedrydown22-21" },
 ];
-
 /* ═══ FEEDBACK CONFIG ═══ */
 /* Replace this URL with your Google Form link after creating it */
 
