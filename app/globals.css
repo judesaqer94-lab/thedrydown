@@ -9,10 +9,13 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: #FFFFFF;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8F6F9 30%, #F5F2F7 60%, #FAF8F5 100%);
+  background-attachment: fixed;
   color: #1A1A1A;
   -webkit-font-smoothing: antialiased;
   font-weight: 400;
   letter-spacing: -0.01em;
+  min-height: 100vh;
 }
 
 ::selection {
@@ -130,6 +133,34 @@ a[href*="/note/"]:hover {
 
 img {
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: imgFadeIn 0.4s ease both;
+}
+
+@keyframes imgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bg-cream {
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-cream::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(155, 142, 196, 0.06), transparent);
+  animation: shimmer 1.8s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 
 a[href*="/perfume/"] img:hover {

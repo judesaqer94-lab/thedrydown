@@ -28,20 +28,21 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
     if (!newReview.name || !newReview.body) { showToast('Please fill in your name and review'); return; }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.from('reviews').insert({
+      // FIX: Removed 'perfume' field (doesn't exist in table) and removed .select()
+      const { error } = await supabase.from('reviews').insert({
         user_name: newReview.name,
         rating: newReview.rating,
         title: newReview.title,
         body: newReview.body,
         perfume_name: perfume.name,
-        perfume: perfume.name,
-      }).select();
+      });
       if (!error) {
-        setReviews(prev => [{ user: newReview.name, rating: newReview.rating, title: newReview.title, body: newReview.body, date: 'Just now', helpful: 0 }, ...prev]);
+        setReviews(prev => [{ user_name: newReview.name, rating: newReview.rating, title: newReview.title, body: newReview.body, created_at: new Date().toISOString(), helpful: 0 }, ...prev]);
         setNewReview({ name: '', rating: 5, title: '', body: '' });
         setShowReviewForm(false);
         showToast('Review published!');
       } else {
+        console.error('Review submit error:', error);
         showToast('Error submitting review');
       }
     } catch (e) { showToast('Error submitting review'); }
@@ -79,7 +80,7 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <Header current="directory" />
 
       {/* Toast */}
@@ -186,33 +187,45 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                   <div>
                     <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Best Seasons</h2>
                     <div className="grid grid-cols-4 gap-3">
-                      {seasons.sort((a, b) => b.score - a.score).map(s => {
-                        const colors = { fall: '#C4956B', winter: '#4A7090', spring: '#A0657B', summer: '#D4A060', autumn: '#C4956B' };
-                        const pct = Math.round(s.score / 3 * 100);
-                        return (
-                          <div key={s.name} className="text-center py-3 border border-faint">
-                            <div className="text-xs font-medium mb-2 capitalize" style={{ color: colors[s.name] || '#8C8378' }}>{s.name}</div>
-                            <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
-                              <div className="h-full" style={{ width: `${pct}%`, background: colors[s.name] || '#8C8378' }} />
+                      {(() => {
+                        const sorted = [...seasons].sort((a, b) => b.score - a.score);
+                        const total = sorted.reduce((sum, s) => sum + s.score, 0) || 1;
+                        return sorted.map(s => {
+                          const colors = { fall: '#C4956B', winter: '#4A7090', spring: '#A0657B', summer: '#D4A060', autumn: '#C4956B' };
+                          const pct = Math.round(s.score / total * 100);
+                          return (
+                            <div key={s.name} className="text-center py-3 border border-faint">
+                              <div className="text-xs font-medium mb-2 capitalize" style={{ color: colors[s.name] || '#8C8378' }}>{s.name}</div>
+                              <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
+                                <div className="h-full" style={{ width: `${pct}%`, background: colors[s.name] || '#8C8378' }} />
+                              </div>
+                              <div className="text-[10px] text-stone mt-1">{pct}%</div>
                             </div>
-                            <div className="text-[10px] text-stone mt-1">{pct}%</div>
-                          </div>
-                        );
-                      })}
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 )}
                 {occasions.length > 0 && (
                   <div>
                     <h2 className="text-xs uppercase tracking-widest text-stone font-medium mb-6">Best Occasions</h2>
-                    {occasions.sort((a, b) => b.score - a.score).map(o => (
-                      <div key={o.name} className="flex items-center gap-3 mb-3">
-                        <div className="w-24 text-xs text-stone text-right capitalize flex-shrink-0">{o.name}</div>
-                        <div className="flex-1 h-2 bg-cream overflow-hidden">
-                          <div className="h-full bar-fill" style={{ width: `${Math.round(o.score / 2 * 100)}%`, background: '#9B8EC4' }} />
-                        </div>
-                      </div>
-                    ))}
+                    {(() => {
+                      const sorted = [...occasions].sort((a, b) => b.score - a.score);
+                      const total = sorted.reduce((sum, o) => sum + o.score, 0) || 1;
+                      return sorted.map(o => {
+                        const pct = Math.round(o.score / total * 100);
+                        return (
+                          <div key={o.name} className="flex items-center gap-3 mb-3">
+                            <div className="w-24 text-xs text-stone text-right capitalize flex-shrink-0">{o.name}</div>
+                            <div className="flex-1 h-2 bg-cream overflow-hidden">
+                              <div className="h-full bar-fill" style={{ width: `${pct}%`, background: '#9B8EC4' }} />
+                            </div>
+                            <div className="w-10 text-[10px] text-stone">{pct}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
@@ -353,10 +366,10 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                 <div key={i} className="border-b border-faint py-5">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user || rv.user_name || "A")[0]}</div>
+                      <div className="w-8 h-8 bg-cream flex items-center justify-center text-sm font-medium text-stone">{(rv.user_name || "A")[0]}</div>
                       <div>
-                        <div className="text-sm font-medium">{rv.user || rv.user_name}</div>
-                        <div className="text-xs text-stone">{rv.date || (rv.created_at ? new Date(rv.created_at).toLocaleDateString() : '')}</div>
+                        <div className="text-sm font-medium">{rv.user_name}</div>
+                        <div className="text-xs text-stone">{rv.created_at ? new Date(rv.created_at).toLocaleDateString() : ''}</div>
                       </div>
                     </div>
                     <Stars value={rv.rating} size={12} />
@@ -375,10 +388,48 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
 
           {/* Similar */}
           <div className="border-t border-faint pt-10">
-            <h2 className="font-serif text-3xl mb-6">You Might Also Like</h2>
+            <h2 className="font-serif text-3xl mb-2">You Might Also Like</h2>
+            <p className="text-xs text-stone mb-6">Based on shared accords, notes, seasons, occasions & performance</p>
             <div className="border-t border-faint">
               {similar.map(p => (
-                <PerfumeCard key={p.id} perfume={p} href={`/perfume/${slugify(p.name, p.brand)}`} />
+                <a key={p.id} href={`/perfume/${slugify(p.name, p.brand)}`} className="cursor-pointer group transition-all block no-underline text-inherit" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8', textDecoration: 'none' }}>
+                  <div className="flex justify-between items-start gap-4">
+                    {p.image_url && (
+                      <div className="flex-shrink-0 w-14 h-14 rounded overflow-hidden bg-cream">
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" loading="lazy" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <h3 className="font-serif text-xl leading-tight" style={{ letterSpacing: '-0.02em' }}>{p.name}</h3>
+                        <span className="text-xs text-stone uppercase tracking-wider">{p.year}</span>
+                      </div>
+                      <div className="text-sm text-stone mt-1">{p.brand}</div>
+                      <div className="flex gap-1.5 mt-2 flex-wrap items-center">
+                        <Tag color={FAMILY_COLORS[p.family]}>{p.family}</Tag>
+                        <Tag>{p.concentration}</Tag>
+                        <Tag>{p.gender}</Tag>
+                        {p.similarity_score && (
+                          <span className="text-[10px] uppercase tracking-widest font-medium px-2 py-1 ml-1"
+                                style={{ background: '#9B8EC420', color: '#9B8EC4', border: '1px solid #9B8EC440' }}>
+                            {Math.round(p.similarity_score)}% match
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {(p.price_low || p.priceLow) ? (
+                        <div className="font-serif text-2xl" style={{ letterSpacing: '-0.03em' }}>AED {p.priceLow || p.price_low}</div>
+                      ) : (
+                        <div className="text-xs text-stone italic">Price N/A</div>
+                      )}
+                      <div className="mt-1"><Stars value={p.rating} size={11} /></div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                    {(p.top_notes || '').split(',').slice(0, 4).map(n => n.trim()).filter(Boolean).join(' · ')}
+                  </div>
+                </a>
               ))}
             </div>
           </div>

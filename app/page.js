@@ -5,7 +5,11 @@ import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, NOTE_COLORS_MAP } from '../data/
 import { supabase } from '../lib/supabase';
 
 function slugify(name, brand) {
-  return `${name}-${brand}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `${name}-${brand}`
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 /* ═══ PALETTE ═══ */
@@ -355,17 +359,15 @@ export default function Home() {
   const submitReview = useCallback(async () => {
     if (!newReview.title || !newReview.body || !newReview.perfume) return;
     try {
-      const { data, error } = await supabase.from('reviews').insert({
+      const { error } = await supabase.from('reviews').insert({
         user_name: newReview.name || "Anonymous",
         perfume_name: newReview.perfume,
         rating: newReview.rating,
         title: newReview.title,
         body: newReview.body,
-      }).select();
+      });
       if (error) throw error;
-      if (data && data[0]) {
-        setUserReviews(prev => [{ user: data[0].user_name, rating: data[0].rating, perfume: data[0].perfume_name, title: data[0].title, body: data[0].body, date: "Just now", helpful: 0, id: data[0].id }, ...prev]);
-      }
+      setUserReviews(prev => [{ user: newReview.name || "Anonymous", rating: newReview.rating, perfume: newReview.perfume, title: newReview.title, body: newReview.body, date: "Just now", helpful: 0 }, ...prev]);
       setNewReview({ name: "", rating: 5, title: "", body: "", perfume: "" });
       setShowWriteReview(false);
       showToast("Review published!");
@@ -469,7 +471,9 @@ export default function Home() {
             </button>
             <a href="/brands" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
             <a href="/notes" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
-            <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
+            <a href="/about" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>About</a>
+            <a href="/scanner" className="text-xs uppercase tracking-widest font-medium transition-colors" style={{textDecoration:'none', color:'#9B8EC4', border:'1.5px solid #9B8EC4', padding:'6px 16px', borderRadius:'6px'}}>Scanner</a>    
+            <a href="/feedback" className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity" style={{textDecoration:'none', color:'#FAF8F5'}}>Feedback</a>
             {isAdmin && <button onClick={() => nav("admin")} className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors relative">
               Admin{pending.length > 0 && <span className="absolute -top-1 -right-3 bg-accent text-paper text-[9px] font-bold w-4 h-4 flex items-center justify-center">{pending.length}</span>}
             </button>}
@@ -491,7 +495,7 @@ export default function Home() {
             {/* Hero */}
             <div className="mb-10 pt-4">
               <h1 className="font-serif text-6xl leading-none tracking-tight mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Fragrance<br /><span className="italic" style={{ color: '#9B8EC4' }}>Directory</span>
+                Fragrance <span className="italic" style={{ color: '#9B8EC4' }}>directory</span>
               </h1>
               <p className="text-stone text-sm mt-4">{allPerfumes.length} fragrances · {brands.length} brands · {allNotes.length} notes</p>
             </div>
@@ -796,7 +800,8 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-faint">
-              <button onClick={() => setShowWriteReview(!showWriteReview)} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
+              {/* FIX: wrapped multiple statements in curly braces */}
+              <button onClick={() => { setShowWriteReview(!showWriteReview); setNewReview(prev => ({...prev, perfume: selected ? selected.name : ''})); }} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
               <div className="flex gap-2 ml-auto">
                 {[["helpful", "Most Helpful"], ["rating", "Top Rated"]].map(([v, l]) => (
                   <button key={v} onClick={() => setReviewSort(v)}
@@ -941,15 +946,16 @@ export default function Home() {
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Explore</div>
                 <div className="flex flex-col gap-1.5">
                   <span onClick={() => nav("browse")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Directory</span>
-                  <span onClick={() => nav("brands")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Brands</span>
-                  <a href="/notes" className="text-xs text-mid hover:text-ink cursor-pointer transition-colors" style={{textDecoration:'none'}}>Notes</a>
-                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
+                  <a href="/brands" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
+                  <a href="/notes" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
+                  <a href="/about" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>About</a>
                 </div>
               </div>
               <div>
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Community</div>
                 <div className="flex flex-col gap-1.5">
-                  <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
+                  <a href="/feedback" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Feedback</a>
+                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
                 </div>
               </div>
             </div>
