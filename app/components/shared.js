@@ -50,8 +50,7 @@ export function PerfumeCard({ perfume: p, href }) {
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <div className="font-serif text-2xl" style={{ letterSpacing: '-0.03em' }}>AED {p.priceLow || p.price_low}</div>
-          <div className="mt-1"><Stars value={p.rating} size={11} /></div>
+          <div><Stars value={p.rating} size={11} /></div>
         </div>
       </div>
       <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">

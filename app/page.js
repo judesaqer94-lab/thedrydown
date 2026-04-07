@@ -112,8 +112,7 @@ function PerfumeCard({ perfume: p, onClick }) {
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <div className="font-serif text-2xl" style={{ letterSpacing: '-0.03em' }}>AED {p.priceLow}</div>
-          <div className="mt-1"><Stars value={p.rating} size={11} /></div>
+          <div><Stars value={p.rating} size={11} /></div>
         </div>
       </div>
       <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
@@ -532,7 +531,7 @@ export default function Home() {
 
             {/* Filters */}
             <div className="flex gap-2 flex-wrap mb-8">
-              {[[familyFilter, setFamilyFilter, [["all", "All"], ...families.map(f => [f, f])]], [genderFilter, setGenderFilter, [["all", "All"], ["Women", "Women"], ["Men", "Men"], ["Unisex", "Unisex"]]], [typeFilter, setTypeFilter, [["all", "Type"], ["Designer", "Designer"], ["Niche", "Niche"], ["Arabic", "Arabic"], ["Indie", "Indie"], ["Affordable", "Affordable"], ["Celebrity", "Celebrity"]]], [priceFilter, setPriceFilter, [["all", "Price"], ["under200", "<AED 200"], ["200to550", "AED 200–550"], ["550to1100", "AED 550–1,100"], ["over1100", "AED 1,100+"]]], [sortBy, setSortBy, [["popular", "Top Rated"], ["newest", "Newest"], ["price_low", "Price ↑"], ["price_high", "Price ↓"], ["name", "A–Z"]]]].map(([val, setter, opts], i) => (
+              {[[familyFilter, setFamilyFilter, [["all", "All"], ...families.map(f => [f, f])]], [genderFilter, setGenderFilter, [["all", "All"], ["Women", "Women"], ["Men", "Men"], ["Unisex", "Unisex"]]], [typeFilter, setTypeFilter, [["all", "Type"], ["Designer", "Designer"], ["Niche", "Niche"], ["Arabic", "Arabic"], ["Indie", "Indie"], ["Affordable", "Affordable"], ["Celebrity", "Celebrity"]]], [priceFilter, setPriceFilter, [["all", "Price"]]], [sortBy, setSortBy, [["popular", "Top Rated"], ["newest", "Newest"], ["name", "A–Z"]]]].map(([val, setter, opts], i) => (
                 <select key={i} value={val} onChange={e => setter(e.target.value)}
                   className="text-xs uppercase tracking-widest font-medium cursor-pointer bg-transparent border border-faint px-3 py-2 text-ink focus:outline-none focus:border-ink transition-colors" style={{ WebkitAppearance: 'none', MozAppearance: 'none', paddingRight: 24, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238C8378'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
                   {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -581,8 +580,6 @@ export default function Home() {
                     <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{selected.name}</h1>
                     <div className="flex items-center gap-4 mt-3">
                       <span onClick={() => openBrand(selected.brand)} className="text-lg text-stone cursor-pointer hover:text-ink transition-colors" style={{ borderBottom: '1px solid #D8D0C8' }}>{selected.brand}</span>
-                      <span className="text-stone">·</span>
-                      <span className="font-serif text-2xl">AED {selected.priceLow}{selected.priceHigh !== selected.priceLow && `–${selected.priceHigh}`}</span>
                       <span className="text-stone">·</span>
                       <Stars value={selected.rating} size={16} />
                     </div>

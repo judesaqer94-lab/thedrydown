@@ -114,8 +114,6 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                   <a href="/brands" className="text-lg text-stone hover:text-ink transition-colors no-underline" style={{ borderBottom: '1px solid #D8D0C8' }}>{perfume.brand}</a>
                   <span className="text-stone">·</span>
-                  <span className="font-serif text-2xl">AED {perfume.price_low}{perfume.price_high !== perfume.price_low && `–${perfume.price_high}`}</span>
-                  <span className="text-stone">·</span>
                   <Stars value={perfume.rating} size={16} />
                 </div>
                 {/* Longevity & Sillage badges */}
@@ -418,12 +416,7 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      {(p.price_low || p.priceLow) ? (
-                        <div className="font-serif text-2xl" style={{ letterSpacing: '-0.03em' }}>AED {p.priceLow || p.price_low}</div>
-                      ) : (
-                        <div className="text-xs text-stone italic">Price N/A</div>
-                      )}
-                      <div className="mt-1"><Stars value={p.rating} size={11} /></div>
+                      <div><Stars value={p.rating} size={11} /></div>
                     </div>
                   </div>
                   <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
