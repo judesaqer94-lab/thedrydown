@@ -1,53 +1,50 @@
+import { client } from '../../../sanity/lib/client';
+import imageUrlBuilder from '@sanity/image-url';
+import BlogPostView from './BlogPost';
 import { createClient } from '@supabase/supabase-js';
-import BlogPost from './BlogPost';
 
+const builder = imageUrlBuilder(client);
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wydptxijqfqimsftgmlp.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5ZHB0eGlqcWZxaW1zZnRnbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MjY1MDYsImV4cCI6MjA4OTMwMjUwNn0.5GvUiFYw1PHFSw92XT6_Ktst20w_dwN8FTz4GYTR4fY';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+export const revalidate = 60;
+
+const POST_QUERY = `*[_type == "blogPost" && slug.current == $slug && status == "published"][0] {
+  "id": _id, title, "slug": slug.current, excerpt, category,
+  "cover_image": coverImage.asset->url, coverImage, author, body,
+  "published_at": publishedAt, "updated_at": _updatedAt,
+  "reading_time": readingTime, featured, tags, seoTitle, seoDescription
+}`;
+
+const RELATED_QUERY = `*[_type == "blogPost" && status == "published" && category == $category && slug.current != $slug] | order(publishedAt desc)[0...3] {
+  "id": _id, title, "slug": slug.current, excerpt, category,
+  "cover_image": coverImage.asset->url, "published_at": publishedAt, "reading_time": readingTime
+}`;
+
+export async function generateStaticParams() {
+  const slugs = await client.fetch(`*[_type == "blogPost" && status == "published"]{ "slug": slug.current }`);
+  return slugs.map((s) => ({ slug: s.slug }));
+}
+
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('title, excerpt, cover_image, author, category')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single();
-
-  if (!data) return { title: 'Post Not Found — The Dry Down' };
-
+  const post = await client.fetch(POST_QUERY, { slug });
+  if (!post) return { title: 'Post Not Found — The Dry Down' };
   return {
-    title: `${data.title} | The Dry Down Blog`,
-    description: data.excerpt,
-    keywords: `${data.category?.replace(/-/g, ' ')}, perfume blog, fragrance guide, the dry down`,
-    openGraph: {
-      title: data.title,
-      description: data.excerpt,
-      type: 'article',
-      images: data.cover_image ? [{ url: data.cover_image }] : [],
-      authors: [data.author || 'The Dry Down'],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: data.title,
-      description: data.excerpt,
-    },
-    alternates: {
-      canonical: `https://www.thedrydown.io/blog/${slug}`,
-    },
+    title: `${post.seoTitle || post.title} | The Dry Down Blog`,
+    description: post.seoDescription || post.excerpt,
+    keywords: `${post.category?.replace(/-/g, ' ')}, perfume blog, fragrance guide, the dry down`,
+    openGraph: { title: post.seoTitle || post.title, description: post.seoDescription || post.excerpt, type: 'article',
+      images: post.cover_image ? [{ url: post.cover_image }] : [], authors: [post.author || 'The Dry Down'] },
+    twitter: { card: 'summary_large_image', title: post.seoTitle || post.title, description: post.seoDescription || post.excerpt },
+    alternates: { canonical: `https://www.thedrydown.io/blog/${slug}` },
   };
 }
 
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
-
-  const { data: post } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single();
-
+  const post = await client.fetch(POST_QUERY, { slug });
   if (!post) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -59,47 +56,26 @@ export default async function BlogPostPage({ params }) {
       </div>
     );
   }
-
-  // Fetch related posts (same category, excluding current)
-  const { data: related } = await supabase
-    .from('blog_posts')
-    .select('id, title, slug, excerpt, category, cover_image, published_at, reading_time')
-    .eq('status', 'published')
-    .eq('category', post.category)
-    .neq('id', post.id)
-    .order('published_at', { ascending: false })
-    .limit(3);
-
-  // Fetch mentioned perfumes if the post has them
+  const related = await client.fetch(RELATED_QUERY, { category: post.category, slug });
   let perfumes = [];
-  if (post.perfume_ids) {
-    const ids = typeof post.perfume_ids === 'string' ? JSON.parse(post.perfume_ids) : post.perfume_ids;
-    if (ids.length > 0) {
-      const { data: perfData } = await supabase
-        .from('perfumes')
-        .select('id, name, brand, family, concentration, image_url, rating, price_low')
-        .in('id', ids);
+  if (post.body) {
+    const perfumeIds = post.body.filter((block) => block._type === 'perfumeEmbed' && block.perfumeId).map((block) => block.perfumeId);
+    if (perfumeIds.length > 0) {
+      const { data: perfData } = await supabase.from('perfumes').select('id, name, brand, family, concentration, image_url, rating, price_low').in('id', perfumeIds);
       perfumes = perfData || [];
     }
   }
-
-  // Structured data for Google
   const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": post.title,
-    "description": post.excerpt,
-    "image": post.cover_image || undefined,
+    "@context": "https://schema.org", "@type": "Article", "headline": post.title,
+    "description": post.excerpt, "image": post.cover_image || undefined,
     "author": { "@type": "Person", "name": post.author || 'The Dry Down' },
     "publisher": { "@type": "Organization", "name": "The Dry Down" },
-    "datePublished": post.published_at,
-    "dateModified": post.updated_at || post.published_at,
+    "datePublished": post.published_at, "dateModified": post.updated_at || post.published_at,
   };
-
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <BlogPost post={post} related={related || []} perfumes={perfumes} />
+      <BlogPostView post={post} related={related || []} perfumes={perfumes} />
     </>
   );
 }

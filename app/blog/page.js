@@ -1,9 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { client } from '../../sanity/lib/client';
+import imageUrlBuilder from '@sanity/image-url';
 import BlogList from './BlogList';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wydptxijqfqimsftgmlp.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5ZHB0eGlqcWZxaW1zZnRnbWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MjY1MDYsImV4cCI6MjA4OTMwMjUwNn0.5GvUiFYw1PHFSw92XT6_Ktst20w_dwN8FTz4GYTR4fY';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const builder = imageUrlBuilder(client);
+
+export const revalidate = 60;
 
 export const metadata = {
   title: 'Blog — Perfume Guides, Reviews & Layering Tips | The Dry Down',
@@ -14,18 +15,23 @@ export const metadata = {
     description: 'Guides, reviews, and editorial picks from the GCC fragrance community.',
     type: 'website',
   },
-  alternates: {
-    canonical: 'https://www.thedrydown.io/blog',
-  },
+  alternates: { canonical: 'https://www.thedrydown.io/blog' },
 };
 
-export default async function BlogPage() {
-  const { data: posts } = await supabase
-    .from('blog_posts')
-    .select('id, title, slug, excerpt, category, cover_image, author, published_at, reading_time, featured')
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .limit(50);
+const POSTS_QUERY = `*[_type == "blogPost" && status == "published"] | order(publishedAt desc)[0...50] {
+  "id": _id,
+  title,
+  "slug": slug.current,
+  excerpt,
+  category,
+  "cover_image": coverImage.asset->url,
+  author,
+  "published_at": publishedAt,
+  "reading_time": readingTime,
+  featured
+}`;
 
+export default async function BlogPage() {
+  const posts = await client.fetch(POSTS_QUERY);
   return <BlogList posts={posts || []} />;
 }
