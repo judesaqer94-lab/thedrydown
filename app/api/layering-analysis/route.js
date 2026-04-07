@@ -1,51 +1,28 @@
 import { NextResponse } from 'next/server';
 
-/**
- * POST /api/layering-analysis
- * 
- * Sends two perfumes' data to Claude for a real layering analysis.
- * Returns a written analysis with reasoning a perfume expert would give.
- */
 export async function POST(request) {
   try {
     const { perfumeA, perfumeB } = await request.json();
-
     if (!perfumeA || !perfumeB) {
       return NextResponse.json({ error: 'Two perfumes required' }, { status: 400 });
     }
-
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'AI analysis not configured' }, { status: 503 });
     }
-
     const prompt = buildPrompt(perfumeA, perfumeB);
-
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }),
     });
-
     if (!response.ok) {
       console.error('Claude API error:', response.status);
       return NextResponse.json({ error: 'AI analysis unavailable' }, { status: 502 });
     }
-
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
-
-    // Parse the structured response
     const analysis = parseAnalysis(text);
-
     return NextResponse.json({ analysis });
   } catch (err) {
     console.error('Layering analysis error:', err);
@@ -60,7 +37,6 @@ function buildPrompt(a, b) {
     const accordsWithLevel = accords.map(a => `${a} (${pcts[a] || 'unknown'})`).join(', ');
     const seasons = p.season_ranking ? (typeof p.season_ranking === 'string' ? JSON.parse(p.season_ranking) : p.season_ranking) : [];
     const occasions = p.occasion_ranking ? (typeof p.occasion_ranking === 'string' ? JSON.parse(p.occasion_ranking) : p.occasion_ranking) : [];
-    
     return `${p.name} by ${p.brand}
   Concentration: ${p.concentration || 'unknown'}
   Family: ${p.family || 'unknown'}
@@ -85,7 +61,7 @@ ${formatPerfume(b)}
 
 Respond in this EXACT format with no additional text or markdown:
 
-VERDICT: [one short phrase, e.g. "A natural pairing" or "Risky but interesting" or "These fight each other"]
+VERDICT: [one creative, specific short phrase that captures THIS specific combo. Be descriptive and unique every time. Examples of the RANGE of verdicts — do NOT reuse these, write something original: "Smoky velvet meets citrus sunshine", "A compliment magnet for cold nights", "Two heavyweights that actually balance", "Clean on clean — doubled-up freshness", "Sweet chaos in the best way", "Office-safe with a hidden edge", "These clash — proceed with caution", "A gourmand dream team", "Understated elegance, amplified". Make it feel like a fragrance reviewer wrote it, not a template.]
 WHY_IT_WORKS: [1-2 sentences on what makes these click together, or why they clash. Reference specific notes/accords.]
 HOW_TO_WEAR: [1-2 sentences — which to apply first, where on the body, how many sprays of each. Be specific.]
 BEST_FOR: [one scenario, e.g. "A cool evening dinner in autumn" or "Weekend brunch in spring"]
@@ -99,7 +75,6 @@ function parseAnalysis(text) {
     const match = text.match(regex);
     return match ? match[1].trim() : '';
   };
-
   return {
     verdict: extract('VERDICT'),
     whyItWorks: extract('WHY_IT_WORKS'),
