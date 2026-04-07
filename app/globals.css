@@ -250,3 +250,7 @@ a[class*="tracking-widest"][class*="text-stone"]:hover {
   letter-spacing: 0.12em;
   transition: letter-spacing 0.3s ease;
 }
+@keyframes mobileMenuIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

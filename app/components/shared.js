@@ -74,6 +74,8 @@ export function Header({ current }) {
             { label: 'Directory', href: '/' },
             { label: 'Brands', href: '/brands' },
             { label: 'Notes', href: '/notes' },
+            { label: 'Layering', href: '/layering-lab' },
+            { label: 'Blog', href: '/blog' },
             { label: 'About', href: '/about' },
           ].map(link => (
             <a key={link.label} href={link.href}
@@ -109,6 +111,8 @@ export function Footer({ perfumeCount, brandCount }) {
                 <a href="/" className="text-xs text-mid hover:text-ink transition-colors no-underline">Directory</a>
                 <a href="/brands" className="text-xs text-mid hover:text-ink transition-colors no-underline">Brands</a>
                 <a href="/notes" className="text-xs text-mid hover:text-ink transition-colors no-underline">Notes</a>
+                <a href="/layering-lab" className="text-xs text-mid hover:text-ink transition-colors no-underline">Layering Lab</a>
+                <a href="/blog" className="text-xs text-mid hover:text-ink transition-colors no-underline">Blog</a>
               </div>
             </div>
           </div>
