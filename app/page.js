@@ -1,8 +1,16 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, BRAND_TYPES, NOTE_COLORS_MAP } from '../data/perfumes';
+import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, NOTE_COLORS_MAP } from '../data/perfumes';
 import { supabase } from '../lib/supabase';
+
+function slugify(name, brand) {
+  return `${name}-${brand}`
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
 /* ═══ PALETTE ═══ */
 const TYPE_COLORS = { Niche: "#8B7A5E", Designer: "#5B7B9B", Arabic: "#B08060", Indie: "#7B9B78", Affordable: "#8B9B8B", Celebrity: "#A07898" };
@@ -38,13 +46,8 @@ const ACCORD_COLORS = {
 };
 
 const RETAILERS = [
-  { name: "FragranceNet", tag: "Best Price", url: "https://www.fragrancenet.com/search?q=Q&utm_source=thedrydown" },
-  { name: "ScentSplit", tag: "Decants", url: "https://www.scentsplit.com/search?q=Q&ref=thedrydown" },
-  { name: "Amazon", tag: "Fast Ship", url: "https://www.amazon.com/s?k=Q&tag=thedrydown-20" },
-  { name: "Sephora", tag: "Rewards", url: "https://www.sephora.com/search?keyword=Q&utm_source=thedrydown" },
-  { name: "Notino", tag: "Global", url: "https://www.notino.com/search/?q=Q&utm_source=thedrydown" },
+  { name: "Buy", tag: "Amazon.ae", url: "https://www.amazon.ae/s?k=Q&tag=thedrydown22-21" },
 ];
-
 /* ═══ FEEDBACK CONFIG ═══ */
 /* Replace this URL with your Google Form link after creating it */
 
@@ -87,9 +90,15 @@ function Tag({ children, dark, active, onClick, style, color }) {
 
 function PerfumeCard({ perfume: p, onClick }) {
   const fc = FAMILY_COLORS[p.family] || '#8C8378';
+  const href = `/perfume/${slugify(p.name, p.brand)}`;
   return (
-    <div onClick={onClick} className="cursor-pointer group transition-all" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8' }}>
+    <a href={href} onClick={onClick} className="cursor-pointer group transition-all block no-underline" style={{ padding: '18px 0', borderBottom: '1px solid #D8D0C8', textDecoration: 'none', color: 'inherit' }}>
       <div className="flex justify-between items-start gap-4">
+        {p.image_url && (
+          <div className="flex-shrink-0 w-14 h-14 rounded overflow-hidden bg-cream">
+            <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" loading="lazy" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <h3 className="font-serif text-xl leading-tight" style={{ letterSpacing: '-0.02em' }}>{p.name}</h3>
@@ -110,7 +119,7 @@ function PerfumeCard({ perfume: p, onClick }) {
       <div className="text-xs text-stone mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
         {p.notes.filter(n => n.position === "top").slice(0, 4).map(n => n.name).join(" · ")}
       </div>
-    </div>
+    </a>
   );
 }
 
@@ -230,6 +239,7 @@ export default function Home() {
   const [toast, setToast] = useState(null);
   const [dbVotes, setDbVotes] = useState({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
 
   const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
@@ -264,6 +274,7 @@ export default function Home() {
             accords: (p.main_accords || '').split(',').map(a => a.trim()).filter(Boolean).map((a, i) => ({ name: a, strength: Math.max(30, 90 - i * 12 + (a.length * 3) % 8) })),
             rating: Number(p.rating) || 4.0,
             brandType: p.brand_type || 'Unknown',
+            image_url: p.image_url || null,
             genderVotes: { feminine: 30 + (idx * 13) % 40, masculine: 10 + (idx * 7) % 30, unisex: 20 + (idx * 11) % 40 },
           }));
           setAllPerfumes(loaded);
@@ -344,17 +355,15 @@ export default function Home() {
   const submitReview = useCallback(async () => {
     if (!newReview.title || !newReview.body || !newReview.perfume) return;
     try {
-      const { data, error } = await supabase.from('reviews').insert({
+      const { error } = await supabase.from('reviews').insert({
         user_name: newReview.name || "Anonymous",
         perfume_name: newReview.perfume,
         rating: newReview.rating,
         title: newReview.title,
         body: newReview.body,
-      }).select();
+      });
       if (error) throw error;
-      if (data && data[0]) {
-        setUserReviews(prev => [{ user: data[0].user_name, rating: data[0].rating, perfume: data[0].perfume_name, title: data[0].title, body: data[0].body, date: "Just now", helpful: 0, id: data[0].id }, ...prev]);
-      }
+      setUserReviews(prev => [{ user: newReview.name || "Anonymous", rating: newReview.rating, perfume: newReview.perfume, title: newReview.title, body: newReview.body, date: "Just now", helpful: 0 }, ...prev]);
       setNewReview({ name: "", rating: 5, title: "", body: "", perfume: "" });
       setShowWriteReview(false);
       showToast("Review published!");
@@ -395,7 +404,7 @@ export default function Home() {
   const brands = useMemo(() => {
     const m = {};
     allPerfumes.forEach(p => {
-      if (!m[p.brand]) m[p.brand] = { name: p.brand, type: p.brandType || BRAND_TYPES[p.brand] || "Unknown", count: 0, perfumes: [] };
+      if (!m[p.brand]) m[p.brand] = { name: p.brand, type: p.brandType || "Unknown", count: 0, perfumes: [] };
       m[p.brand].count++;
       m[p.brand].perfumes.push(p);
     });
@@ -415,7 +424,7 @@ export default function Home() {
       if (query) { const s = query.toLowerCase(); if (!(p.name.toLowerCase().includes(s) || p.brand.toLowerCase().includes(s) || p.notes.some(n => n.name.toLowerCase().includes(s)) || p.accords.some(a => a.name.toLowerCase().includes(s)))) return false; }
       if (familyFilter !== "all" && p.family !== familyFilter) return false;
       if (genderFilter !== "all" && p.gender !== genderFilter) return false;
-      if (typeFilter !== "all" && (p.brandType || BRAND_TYPES[p.brand] || "") !== typeFilter) return false;
+      if (typeFilter !== "all" && (p.brandType || "") !== typeFilter) return false;
       if (priceFilter === "under200" && p.priceLow >= 200) return false;
       if (priceFilter === "200to550" && (p.priceLow < 200 || p.priceLow >= 550)) return false;
       if (priceFilter === "550to1100" && (p.priceLow < 550 || p.priceLow >= 1100)) return false;
@@ -444,27 +453,54 @@ export default function Home() {
       {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-ink text-paper px-8 py-3.5 text-sm font-medium z-50 animate-slide-up max-w-[90%] text-center tracking-wide">{toast}</div>}
 
       {/* NAV */}
-      <nav className="border-b border-faint sticky top-0 z-40 bg-paper/95 backdrop-blur-sm">
+      <nav className="border-b sticky top-0 z-40" style={{ borderColor: '#F0F0F0', backdropFilter: 'blur(12px)', background: 'rgba(255,255,255,0.92)' }}>
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
           <div onClick={() => nav("browse")} className="cursor-pointer select-none">
             <span className="font-serif text-2xl tracking-tight">The </span>
             <span className="font-serif text-2xl italic" style={{ color: '#9B8EC4' }}>Dry</span>
             <span className="font-serif text-2xl tracking-tight"> Down</span>
           </div>
-          <div className="flex items-center gap-6">
-            {[["browse", "Directory"], ["reviews", "Reviews"], ["brands", "Brands"], ["notes", "Notes"]].map(([id, label]) => (
-              <button key={id} onClick={() => nav(id)}
-                className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === id || (view === "detail" && id === "browse") || (view === "brand" && id === "brands") || (view === "note_detail" && id === "notes")) ? "text-ink" : "text-stone hover:text-ink"}`}>
-                {label}
-              </button>
-            ))}
-            <button onClick={() => nav("submit")} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-4 py-2 hover:opacity-80 transition-opacity">+ Suggest</button>
+          <div className="hidden md:flex items-center gap-6">
+            <button onClick={() => nav("browse")}
+              className={`text-xs uppercase tracking-widest font-medium transition-colors ${(view === "browse") ? "text-ink" : "text-stone hover:text-ink"}`}>
+              Directory
+            </button>
+            <a href="/brands" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
+            <a href="/notes" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
+            <a href="/blog" className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors" style={{textDecoration:'none'}}>Blog</a>
+            <a href="/layering-lab" className="text-xs uppercase tracking-widest font-medium transition-all" style={{textDecoration:'none', color:'#9B8EC4', border:'1.5px solid #9B8EC4', padding:'6px 16px', borderRadius:'6px'}}>Layering Lab</a>
+            <a href="/scanner" className="text-xs uppercase tracking-widest font-medium transition-opacity hover:opacity-80" style={{textDecoration:'none', background:'#1A1A1A', color:'#FAF8F5', padding:'6px 16px', borderRadius:'6px'}}>Scanner</a>
             {isAdmin && <button onClick={() => nav("admin")} className="text-xs uppercase tracking-widest font-medium text-stone hover:text-ink transition-colors relative">
               Admin{pending.length > 0 && <span className="absolute -top-1 -right-3 bg-accent text-paper text-[9px] font-bold w-4 h-4 flex items-center justify-center">{pending.length}</span>}
             </button>}
           </div>
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="md:hidden flex flex-col justify-center items-center w-8 h-8" style={{ gap: '5px' }} aria-label="Menu">
+            <span className="block h-px transition-all" style={{ width: '20px', background: '#1A1A1A', transform: mobileMenu ? 'rotate(45deg) translate(2px, 2px)' : 'none', transitionDuration: '0.3s' }} />
+            <span className="block h-px transition-all" style={{ width: '20px', background: '#1A1A1A', opacity: mobileMenu ? 0 : 1, transitionDuration: '0.3s' }} />
+            <span className="block h-px transition-all" style={{ width: '20px', background: '#1A1A1A', transform: mobileMenu ? 'rotate(-45deg) translate(2px, -2px)' : 'none', transitionDuration: '0.3s' }} />
+          </button>
         </div>
       </nav>
+      {mobileMenu && (
+        <div className="fixed inset-0 z-30 md:hidden" style={{ top: '57px' }}>
+          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.15)' }} onClick={() => setMobileMenu(false)} />
+          <div className="relative" style={{ background: '#FFF', borderBottom: '1px solid #E8E8E8', boxShadow: '0 12px 40px rgba(0,0,0,0.06)', animation: 'mobileMenuIn 0.25s cubic-bezier(0.22,1,0.36,1) both' }}>
+            <div className="px-6 py-6">
+              <div className="text-xs uppercase tracking-widest font-medium mb-3" style={{ color: '#D8D0C8' }}>Explore</div>
+              <button onClick={() => { nav("browse"); setMobileMenu(false); }} className="block w-full text-left py-3.5 text-sm font-medium" style={{ color: view === 'browse' ? '#1A1A1A' : '#8C8378', borderBottom: '1px solid #F5F5F5' }}>Directory</button>
+              <a href="/brands" className="block py-3.5 text-sm font-medium" style={{ color: '#8C8378', borderBottom: '1px solid #F5F5F5', textDecoration: 'none' }}>Brands</a>
+              <a href="/notes" className="block py-3.5 text-sm font-medium" style={{ color: '#8C8378', borderBottom: '1px solid #F5F5F5', textDecoration: 'none' }}>Notes</a>
+              <a href="/blog" className="block py-3.5 text-sm font-medium" style={{ color: '#8C8378', borderBottom: '1px solid #F5F5F5', textDecoration: 'none' }}>Blog</a>
+              <a href="/about" className="block py-3.5 text-sm font-medium" style={{ color: '#8C8378', borderBottom: '1px solid #F5F5F5', textDecoration: 'none' }}>About</a>
+              <a href="/feedback" className="block py-3.5 text-sm font-medium" style={{ color: '#8C8378', borderBottom: '1px solid #F5F5F5', textDecoration: 'none' }}>Feedback</a>
+              <div className="flex gap-3 pt-6">
+                <a href="/layering-lab" className="flex-1 text-center text-xs uppercase tracking-widest font-medium py-3" style={{ color: '#9B8EC4', border: '1.5px solid #9B8EC4', borderRadius: '6px', textDecoration: 'none' }}>Layering Lab</a>
+                <a href="/scanner" className="flex-1 text-center text-xs uppercase tracking-widest font-medium py-3" style={{ background: '#1A1A1A', color: '#FAF8F5', borderRadius: '6px', textDecoration: 'none' }}>Scanner</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-5xl mx-auto px-6 py-8 pb-24">
 
@@ -480,17 +516,17 @@ export default function Home() {
             {/* Hero */}
             <div className="mb-10 pt-4">
               <h1 className="font-serif text-6xl leading-none tracking-tight mb-3" style={{ letterSpacing: '-0.03em' }}>
-                Fragrance<br /><span className="italic" style={{ color: '#9B8EC4' }}>Directory</span>
+                Fragrance <span className="italic" style={{ color: '#9B8EC4' }}>directory</span>
               </h1>
               <p className="text-stone text-sm mt-4">{allPerfumes.length} fragrances · {brands.length} brands · {allNotes.length} notes</p>
             </div>
 
             {/* Search */}
-            <div className="border-b border-ink pb-2 mb-6 flex items-center gap-3">
-              <span className="text-stone text-sm">Search</span>
+            <div className="border border-ink rounded-lg px-5 py-3 mb-6 flex items-center gap-3 bg-white shadow-sm">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C8378" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="name, brand, note, accord..."
-                className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-faint" style={{ letterSpacing: '-0.01em' }} />
+                placeholder="Search by name, brand, note, or accord..."
+                className="flex-1 bg-transparent text-base focus:outline-none placeholder:text-stone/40" style={{ letterSpacing: '-0.01em' }} />
               {query && <button onClick={() => setQuery("")} className="text-stone hover:text-ink text-sm transition-colors">Clear</button>}
             </div>
 
@@ -507,7 +543,7 @@ export default function Home() {
 
             {/* List */}
             <div>
-              {filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} onClick={() => openPerfume(p)} />)}
+              {filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} />)}
             </div>
             {filtered.length === 0 && <div className="py-20 text-center text-stone font-serif text-2xl italic">No results</div>}
           </div>
@@ -515,7 +551,7 @@ export default function Home() {
 
         {/* ═══ DETAIL ═══ */}
         {view === "detail" && selected && (() => {
-          const bt = selected.brandType || BRAND_TYPES[selected.brand];
+          const bt = selected.brandType;
           const similar = getSimilar(selected);
           const grouped = { top: [], heart: [], base: [] };
           selected.notes.forEach(n => { if (grouped[n.position]) grouped[n.position].push(n); });
@@ -528,20 +564,29 @@ export default function Home() {
 
               {/* Hero header */}
               <div className="mb-12">
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  <Tag color={FAMILY_COLORS[selected.family]}>{selected.family}</Tag>
-                  <Tag>{selected.concentration}</Tag>
-                  <Tag>{selected.gender}</Tag>
-                  {bt && <Tag color={TYPE_COLORS[bt]}>{bt}</Tag>}
-                  <Tag>{selected.year}</Tag>
-                </div>
-                <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{selected.name}</h1>
-                <div className="flex items-center gap-4 mt-3">
-                  <span onClick={() => openBrand(selected.brand)} className="text-lg text-stone cursor-pointer hover:text-ink transition-colors" style={{ borderBottom: '1px solid #D8D0C8' }}>{selected.brand}</span>
-                  <span className="text-stone">·</span>
-                  <span className="font-serif text-2xl">AED {selected.priceLow}{selected.priceHigh !== selected.priceLow && `–${selected.priceHigh}`}</span>
-                  <span className="text-stone">·</span>
-                  <Stars value={selected.rating} size={16} />
+                <div className="flex gap-6 items-start">
+                  {selected.image_url && (
+                    <div className="flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden bg-cream">
+                      <img src={selected.image_url} alt={selected.name} className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      <Tag color={FAMILY_COLORS[selected.family]}>{selected.family}</Tag>
+                      <Tag>{selected.concentration}</Tag>
+                      <Tag>{selected.gender}</Tag>
+                      {bt && <Tag color={TYPE_COLORS[bt]}>{bt}</Tag>}
+                      <Tag>{selected.year}</Tag>
+                    </div>
+                    <h1 className="font-serif text-5xl leading-none mb-3" style={{ letterSpacing: '-0.03em' }}>{selected.name}</h1>
+                    <div className="flex items-center gap-4 mt-3">
+                      <span onClick={() => openBrand(selected.brand)} className="text-lg text-stone cursor-pointer hover:text-ink transition-colors" style={{ borderBottom: '1px solid #D8D0C8' }}>{selected.brand}</span>
+                      <span className="text-stone">·</span>
+                      <span className="font-serif text-2xl">AED {selected.priceLow}{selected.priceHigh !== selected.priceLow && `–${selected.priceHigh}`}</span>
+                      <span className="text-stone">·</span>
+                      <Stars value={selected.rating} size={16} />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -554,7 +599,7 @@ export default function Home() {
                     const ac = ACCORD_COLORS[a.name] || `hsl(${a.name.length * 37 % 360},40%,45%)`;
                     return (
                       <div key={a.name} className="flex items-center gap-3 mb-3">
-                        <div className="w-20 text-xs text-stone text-right capitalize flex-shrink-0">{a.name}</div>
+                        <div className="w-28 text-xs text-stone text-right capitalize flex-shrink-0">{a.name}</div>
                         <div className="flex-1 h-2 bg-cream overflow-hidden">
                           <div className="h-full bar-fill" style={{ width: `${a.strength}%`, background: ac }} />
                         </div>
@@ -575,7 +620,7 @@ export default function Home() {
                         const nc = NOTE_COLORS_MAP[n.name] || NOTE_COLORS[pos];
                         return (
                           <div key={n.name} className="flex items-center gap-3 mb-2">
-                            <div className="w-20 text-xs text-stone text-right truncate flex-shrink-0">{n.name}</div>
+                            <div className="w-28 text-xs text-stone text-right truncate flex-shrink-0">{n.name}</div>
                             <div className="flex-1 h-2 bg-cream overflow-hidden">
                               <div className="h-full bar-fill" style={{ width: `${n.strength}%`, background: nc, border: nc === '#FFFFFF' || nc === '#F2F0E8' ? '1px solid #ddd' : 'none' }} />
                             </div>
@@ -760,7 +805,7 @@ export default function Home() {
               <div className="border-t border-faint pt-10">
                 <h2 className="font-serif text-3xl mb-6">You Might Also Like</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-t border-faint">
-                  {similar.map(p => <PerfumeCard key={p.name + p.brand} perfume={p} onClick={() => openPerfume(p)} />)}
+                  {similar.map(p => <PerfumeCard key={p.name + p.brand} perfume={p} />)}
                 </div>
               </div>
             </div>
@@ -776,7 +821,8 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-faint">
-              <button onClick={() => setShowWriteReview(!showWriteReview)} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
+              {/* FIX: wrapped multiple statements in curly braces */}
+              <button onClick={() => { setShowWriteReview(!showWriteReview); setNewReview(prev => ({...prev, perfume: selected ? selected.name : ''})); }} className="text-xs uppercase tracking-widest font-medium bg-ink text-paper px-5 py-2.5 hover:opacity-80 transition-opacity">Write a Review</button>
               <div className="flex gap-2 ml-auto">
                 {[["helpful", "Most Helpful"], ["rating", "Top Rated"]].map(([v, l]) => (
                   <button key={v} onClick={() => setReviewSort(v)}
@@ -867,7 +913,7 @@ export default function Home() {
               </div>
             </div>
             <div className="border-t border-faint">
-              {brandView.perfumes.map(p => <PerfumeCard key={p.name} perfume={p} onClick={() => openPerfume(p)} />)}
+              {brandView.perfumes.map(p => <PerfumeCard key={p.name} perfume={p} />)}
             </div>
           </div>
         )}
@@ -883,23 +929,23 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {allNotes.map(n => (
-                <span key={n.name} onClick={() => openNote(n.name)}
-                  className="px-3 py-1.5 border border-faint text-sm cursor-pointer hover:border-ink hover:bg-cream transition-all">
+                <a key={n.name} href={`/note/${encodeURIComponent(n.name.toLowerCase())}`}
+                  className="px-3 py-1.5 border border-faint text-sm cursor-pointer hover:border-ink hover:bg-cream transition-all no-underline text-inherit">
                   {n.name} <span className="text-xs text-stone">{n.count}</span>
-                </span>
+                </a>
               ))}
             </div>
           </div>
         )}
         {view === "note_detail" && noteView && (
           <div className="animate-fade-up">
-            <button onClick={() => nav("notes")} className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block">← All Notes</button>
+            <a href="/notes" className="text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors mb-8 inline-block no-underline">← All Notes</a>
             <div className="mb-8">
               <h1 className="font-serif text-4xl mb-2">{noteView.name}</h1>
               <p className="text-sm text-stone">Found in {noteView.count} fragrances</p>
             </div>
             <div className="border-t border-faint">
-              {allPerfumes.filter(p => p.notes.some(n => n.name === noteView.name)).map(p => <PerfumeCard key={p.name + p.brand} perfume={p} onClick={() => openPerfume(p)} />)}
+              {allPerfumes.filter(p => p.notes.some(n => n.name === noteView.name)).map(p => <PerfumeCard key={p.name + p.brand} perfume={p} />)}
             </div>
           </div>
         )}
@@ -921,16 +967,16 @@ export default function Home() {
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Explore</div>
                 <div className="flex flex-col gap-1.5">
                   <span onClick={() => nav("browse")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Directory</span>
-                  <span onClick={() => nav("brands")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Brands</span>
-                  <span onClick={() => nav("notes")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Notes</span>
-                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
+                  <a href="/brands" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Brands</a>
+                  <a href="/notes" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Notes</a>
+                  <a href="/about" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>About</a>
                 </div>
               </div>
               <div>
                 <div className="text-xs uppercase tracking-widest font-medium text-ink mb-3">Community</div>
                 <div className="flex flex-col gap-1.5">
-                  
-                  <a href="/feedback" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:"none"}}>Feedback</a>
+                  <a href="/feedback" className="text-xs text-mid hover:text-ink transition-colors" style={{textDecoration:'none'}}>Feedback</a>
+                  <span onClick={() => nav("reviews")} className="text-xs text-mid hover:text-ink cursor-pointer transition-colors">Reviews</span>
                 </div>
               </div>
             </div>
