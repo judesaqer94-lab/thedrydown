@@ -102,7 +102,7 @@ function normalizeSlug(str) {
 // ═══ SEO METADATA ═══
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const { data } = await supabase.from('perfumes').select('*').limit(2000);
+  const { data } = await supabase.from('perfumes').select('*').limit(10000);
   
   const perfume = data?.find(p => {
     const s = normalizeSlug(`${p.name}-${p.brand}`);
@@ -144,7 +144,7 @@ export default async function PerfumePage({ params }) {
   const { slug } = await params;
   
   // Fetch all perfumes for matching + similar
-  const { data: allPerfumes } = await supabase.from('perfumes').select('*').limit(2000);
+  const { data: allPerfumes } = await supabase.from('perfumes').select('*').limit(10000);
   
   const perfume = allPerfumes?.find(p => {
     const s = normalizeSlug(`${p.name}-${p.brand}`);
