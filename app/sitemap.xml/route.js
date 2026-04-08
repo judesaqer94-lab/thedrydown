@@ -9,7 +9,7 @@ function slugify(name, brand) {
 }
 
 export async function GET() {
-  const { data: perfumes } = await supabase.from('perfumes').select('name, brand, top_notes, heart_notes, base_notes').limit(2000);
+  const { data: perfumes } = await supabase.from('perfumes').select('name, brand, top_notes, heart_notes, base_notes').limit(10000);
 
   const baseUrl = 'https://www.thedrydown.io';
   const today = new Date().toISOString().split('T')[0];
