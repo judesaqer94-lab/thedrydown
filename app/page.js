@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { PERFUMES, FAMILIES, ALL_NOTES, BRANDS, NOTE_COLORS_MAP } from '../data/perfumes';
 import { supabase } from '../lib/supabase';
 
 function slugify(name, brand) {
@@ -44,6 +43,8 @@ const ACCORD_COLORS = {
   "cotton candy":"#FFB6C1", rum:"#BF9B30", spicy:"#C87941", talc:"#E8D5C4",
   apple:"#7EC87E", pineapple:"#F5D76E", camphor:"#B0E0E6"
 };
+
+const NOTE_COLORS_MAP = {"Rose":"#FF1493","Turkish Rose":"#FF1493","Bulgarian Rose":"#FF1493","Damascus Rose":"#FF1493","May Rose":"#FF1493","Centifolia Rose":"#FF1493","Grasse Rose":"#FF1493","Rose Absolute":"#FF1493","Rose Petals":"#FF1493","Rose Buds":"#FF1493","Taif Rose":"#FF1493","Black Rose":"#C71585","Jasmine":"#FFFF00","Jasmine Sambac":"#FFFF00","Jasmine Absolute":"#FFFF00","Egyptian Jasmine":"#FFFF00","Jasmine Grandiflorum":"#FFFF00","Jasmine Blossom":"#FFFF00","Jasmine Petals":"#FFFF00","Jasmine Bud":"#FFFF00","Tuberose":"#FFFFFF","Orange Blossom":"#FFA500","Neroli":"#FFA500","Ylang-Ylang":"#FFFF00","Iris":"#DDA0DD","Iris Root":"#DDA0DD","Orris":"#DDA0DD","Orris Root":"#DDA0DD","Violet":"#9370DB","Violet Leaf":"#228B22","Peony":"#FFB6C1","Lily":"#FFFFFF","Lily-of-the-Valley":"#FFFFFF","Magnolia":"#FFFFFF","Gardenia":"#FFFFFF","Orchid":"#DA70D6","Black Orchid":"#8B008B","Vanilla Orchid":"#DA70D6","Freesia":"#DA70D6","Carnation":"#FF6B81","Mimosa":"#FFD700","Heliotrope":"#DDA0DD","Narcissus":"#FFFF00","Osmanthus":"#FFA500","Frangipani":"#FFE4B5","Honeysuckle":"#FFD700","Hibiscus":"#FF6B81","Wisteria":"#9370DB","Hyacinth":"#6495ED","Lotus":"#FFB6C1","Geranium":"#FF69B4","Lavender":"#9370DB","Lavandin":"#9370DB","Diva Lavender":"#9370DB","Chamomile":"#FFD700","White Flowers":"#FFFFFF","Cotton Flower":"#FFFFFF","Tiare Flower":"#FFFFFF","Cactus Flower":"#32CD32","Bergamot":"#FFFF00","Lemon":"#FFFF00","Lime":"#32CD32","Mandarin Orange":"#FFA500","Orange":"#FFA500","Blood Orange":"#FF4500","Grapefruit":"#FFFF00","Tangerine":"#FFA500","Bitter Orange":"#FF8C00","Yuzu":"#FFFF00","Citron":"#FFFF00","Kumquat":"#FFA500","Sicilian Lemon":"#FFFF00","Calabrian Bergamot":"#FFFF00","Citrus":"#FFFF00","Petit Grain":"#32CD32","Petitgrain":"#32CD32","Peach":"#FFA07A","White Peach":"#FFDAB9","Apple":"#32CD32","Green Apple":"#32CD32","Red Apple":"#FF0000","Pear":"#9ACD32","Raspberry":"#DC143C","Strawberry":"#FF4040","Blackberry":"#800080","Black Currant":"#4B0082","Red Currant":"#DC143C","Plum":"#8B008B","Cherry":"#DC143C","Black Cherry":"#8B0000","Lychee":"#FF69B4","Litchi":"#FF69B4","Pineapple":"#FFD700","Mango":"#FFA500","Coconut":"#F5E6C8","Coconut Milk":"#F5E6C8","Pomegranate":"#DC143C","Fig":"#8B6040","Fig Leaf":"#228B22","Passion Fruit":"#FFA500","Guava":"#FFA500","Melon":"#90EE90","Apricot":"#FFA07A","Nectarine":"#FFA07A","Cranberry":"#DC143C","Blueberry":"#4169E1","Red Berries":"#DC143C","Wild Berry":"#800080","Fruity Notes":"#FF6347","Fruits":"#FF6347","Vanilla":"#FFD700","Vanilla Absolute":"#FFD700","Bourbon Vanilla":"#FFD700","Madagascar Vanilla":"#FFD700","Vanilla Cream":"#FFD700","Vanilla Caviar":"#FFD700","Caramel":"#D2691E","Salted Caramel":"#D2691E","Chocolate":"#6B3410","Dark Chocolate":"#4A2810","Cacao":"#6B3410","Cocoa":"#6B3410","Dry Cocoa":"#6B3410","Coffee":"#4A2810","Coffee Absolute":"#4A2810","Espresso":"#3A1800","Honey":"#FFD700","Sugar":"#FFFACD","Brown Sugar":"#D2691E","Praline":"#C8A070","Marshmallow":"#FFFACD","Toffee":"#D2691E","Tonka Bean":"#C8A060","Almond":"#D2B48C","Bitter Almond":"#D2B48C","Rum":"#B8860B","Cognac":"#B8860B","Bourbon":"#B8860B","Sweet Notes":"#FF0000","Gourmand Notes":"#D2691E","Dates":"#8B6040","Pistachio":"#32CD32","Cherry Liqueur":"#8B0000","Cinnamon":"#D2691E","Saffron":"#FF8C00","Cardamom":"#C8A060","Pink Pepper":"#FF69B4","Black Pepper":"#808080","Pepper":"#808080","Nutmeg":"#C8A060","Clove":"#8B4513","Ginger":"#FFD700","Cumin":"#C8A060","Coriander":"#228B22","Star Anise":"#8B4513","Spicy Notes":"#D2691E","Sandalwood":"#D2B48C","Cedar":"#8B4513","Cedarwood":"#8B4513","Oud":"#4A2810","Agarwood":"#4A2810","Patchouli":"#556B2F","Vetiver":"#556B2F","Guaiac Wood":"#8B4513","Birch":"#808080","Cypress":"#228B22","Oakmoss":"#556B2F","Pine":"#228B22","Woody Notes":"#8B4513","Rosewood":"#C89078","Driftwood":"#A09080","Amber":"#DAA520","White Amber":"#FFD700","Ambergris":"#DAA520","Ambroxan":"#D2B48C","Benzoin":"#A0522D","Labdanum":"#A0522D","Frankincense":"#DAA520","Incense":"#A0522D","Myrrh":"#8B6040","Olibanum":"#A0522D","Musk":"#C0C0C0","White Musk":"#D3D3D3","Cashmere Musk":"#C0C0C0","Skin Musk":"#D2B48C","Ambrette":"#D2B48C","Ambrette Seeds":"#D2B48C","Leather":"#808080","Suede":"#A09080","Tobacco":"#8B6040","Tobacco Leaf":"#8B6040","Smoke":"#808080","Mint":"#32CD32","Peppermint":"#32CD32","Basil":"#228B22","Sage":"#228B22","Rosemary":"#228B22","Thyme":"#228B22","Tea":"#228B22","Green Tea":"#32CD32","Black Tea":"#8B6040","Matcha":"#32CD32","White Tea":"#90EE90","Green Notes":"#228B22","Sea Salt":"#4682B4","Calone":"#4682B4","Marine Notes":"#4682B4","Aquatic Notes":"#4682B4","Sea Water":"#4682B4","Ozone":"#87CEEB","Powdery Notes":"#DDA0DD","Cashmeran":"#D2B48C","Aldehydes":"#D3D3D3","Creamy Notes":"#FFFACD","Cream":"#FFFACD","Milk":"#FFFACD"};
 
 const RETAILERS = [
   { name: "Buy", tag: "Amazon.ae", url: "https://www.amazon.ae/s?k=Q&tag=thedrydown22-21" },
@@ -122,10 +123,10 @@ function PerfumeCard({ perfume: p, onClick }) {
   );
 }
 
-function getSimilar(perfume) {
+function getSimilar(perfume, perfumesList) {
   const pNotes = new Set(perfume.notes.map(n => n.name));
   const pAccords = new Set(perfume.accords.map(a => a.name));
-  return PERFUMES
+  return perfumesList
     .filter(x => x.name !== perfume.name)
     .map(x => {
       const xN = new Set(x.notes.map(n => n.name));
@@ -218,7 +219,8 @@ function AdminPanel({ pending, onApprove, onReject, onClose }) {
 
 /* ═══ MAIN APP ═══ */
 export default function Home() {
-  const [allPerfumes, setAllPerfumes] = useState(PERFUMES);
+  const [allPerfumes, setAllPerfumes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState("browse");
   const [query, setQuery] = useState("");
   const [familyFilter, setFamilyFilter] = useState("all");
@@ -254,7 +256,7 @@ export default function Home() {
     async function loadData() {
       try {
         const [perfRes, revRes, subRes, voteRes] = await Promise.all([
-          supabase.from('perfumes').select('*').order('brand', { ascending: true }),
+          supabase.from('perfumes').select('*').order('brand', { ascending: true }).limit(10000),
           supabase.from('reviews').select('*').order('created_at', { ascending: false }),
           supabase.from('submissions').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
           supabase.from('votes').select('*'),
@@ -293,6 +295,7 @@ export default function Home() {
           setDbVotes(grouped);
         }
       } catch (e) { console.log('Supabase load error:', e); }
+      setLoading(false);
     }
     loadData();
   }, []);
@@ -517,7 +520,7 @@ export default function Home() {
               <h1 className="font-serif text-6xl leading-none tracking-tight mb-3" style={{ letterSpacing: '-0.03em' }}>
                 Fragrance <span className="italic" style={{ color: '#9B8EC4' }}>directory</span>
               </h1>
-              <p className="text-stone text-sm mt-4">{allPerfumes.length} fragrances · {brands.length} brands · {allNotes.length} notes</p>
+              <p className="text-stone text-sm mt-4">{loading ? 'Loading fragrances…' : `${allPerfumes.length} fragrances · ${brands.length} brands · ${allNotes.length} notes`}</p>
             </div>
 
             {/* Search */}
@@ -542,16 +545,38 @@ export default function Home() {
 
             {/* List */}
             <div>
-              {filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} />)}
+              {loading ? (
+                <div className="space-y-0">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="py-5 border-b border-faint animate-pulse">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-shrink-0 w-14 h-14 rounded bg-cream" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-5 bg-cream rounded w-48 mb-2" />
+                          <div className="h-3 bg-cream rounded w-28 mb-2" />
+                          <div className="flex gap-1.5">
+                            <div className="h-6 bg-cream rounded w-16" />
+                            <div className="h-6 bg-cream rounded w-12" />
+                            <div className="h-6 bg-cream rounded w-14" />
+                          </div>
+                        </div>
+                        <div className="h-3 bg-cream rounded w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                filtered.map((p, i) => <PerfumeCard key={p.name + p.brand + i} perfume={p} />)
+              )}
             </div>
-            {filtered.length === 0 && <div className="py-20 text-center text-stone font-serif text-2xl italic">No results</div>}
+            {!loading && filtered.length === 0 && <div className="py-20 text-center text-stone font-serif text-2xl italic">No results</div>}
           </div>
         )}
 
         {/* ═══ DETAIL ═══ */}
         {view === "detail" && selected && (() => {
           const bt = selected.brandType;
-          const similar = getSimilar(selected);
+          const similar = getSimilar(selected, allPerfumes);
           const grouped = { top: [], heart: [], base: [] };
           selected.notes.forEach(n => { if (grouped[n.position]) grouped[n.position].push(n); });
           Object.keys(grouped).forEach(k => grouped[k].sort((a, b) => b.strength - a.strength));
