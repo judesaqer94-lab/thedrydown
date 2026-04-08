@@ -276,7 +276,6 @@ export default function Home() {
             rating: Number(p.rating) || 4.0,
             brandType: p.brand_type || 'Unknown',
             image_url: p.image_url || null,
-            genderVotes: { feminine: 30 + (idx * 13) % 40, masculine: 10 + (idx * 7) % 30, unisex: 20 + (idx * 11) % 40 },
           }));
           setAllPerfumes(loaded);
         }
@@ -662,12 +661,27 @@ export default function Home() {
                   {/* Rating */}
                   <div>
                     <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Rating</div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-serif text-5xl">{selected.rating}</span>
-                      <span className="text-stone text-sm">/ 5</span>
-                    </div>
-                    <div className="mt-2"><Stars value={selected.rating} size={16} /></div>
-                    <div className="text-xs text-stone mt-2">{120 + (selected.id * 17) % 380} ratings</div>
+                    {(() => {
+                      const rv = dbVotes[`${selected.name}:rating`] || {};
+                      const communityVotes = Object.entries(rv);
+                      const communityTotal = communityVotes.reduce((s, [, count]) => s + count, 0);
+                      const communitySum = communityVotes.reduce((s, [score, count]) => s + Number(score) * count, 0);
+                      const baselineWeight = 10;
+                      const baselineRating = Number(selected.rating) || 4.0;
+                      const blendedRating = communityTotal > 0
+                        ? ((baselineRating * baselineWeight + communitySum) / (baselineWeight + communityTotal)).toFixed(1)
+                        : baselineRating;
+                      return (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-serif text-5xl">{blendedRating}</span>
+                            <span className="text-stone text-sm">/ 5</span>
+                          </div>
+                          <div className="mt-2"><Stars value={Number(blendedRating)} size={16} /></div>
+                          <div className="text-xs text-stone mt-2">{communityTotal > 0 ? `${communityTotal} community votes` : 'Based on editorial rating'}</div>
+                        </>
+                      );
+                    })()}
                     <div className="mt-4 flex items-center gap-2">
                       <span className="text-xs text-stone">Rate:</span>
                       {[1,2,3,4,5].map(s => (
@@ -681,11 +695,14 @@ export default function Home() {
                   <div>
                     <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Gender Leaning</div>
                     {(() => {
-                      const votes = selected.genderVotes || { feminine: 40, masculine: 20, unisex: 40 };
-                      const total = votes.feminine + votes.masculine + votes.unisex;
-                      const fPct = Math.round(votes.feminine / total * 100);
-                      const mPct = Math.round(votes.masculine / total * 100);
-                      const uPct = 100 - fPct - mPct;
+                      const gv = dbVotes[`${selected.name}:gender`] || {};
+                      const fem = gv['Feminine'] || 0;
+                      const masc = gv['Masculine'] || 0;
+                      const uni = gv['Unisex'] || 0;
+                      const total = fem + masc + uni;
+                      const fPct = total > 0 ? Math.round(fem / total * 100) : 33;
+                      const mPct = total > 0 ? Math.round(masc / total * 100) : 33;
+                      const uPct = total > 0 ? 100 - fPct - mPct : 34;
                       return (
                         <div>
                           <div className="flex overflow-hidden h-2 mb-3">
@@ -714,8 +731,12 @@ export default function Home() {
                   <div>
                     <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Day or Night</div>
                     {(() => {
-                      const dayPct = 25 + (selected.id * 11 + selected.name.length * 3) % 50;
-                      const nightPct = 100 - dayPct;
+                      const dn = dbVotes[`${selected.name}:daynight`] || {};
+                      const day = dn['Day'] || 0;
+                      const night = dn['Night'] || 0;
+                      const total = day + night;
+                      const dayPct = total > 0 ? Math.round(day / total * 100) : 50;
+                      const nightPct = total > 0 ? 100 - dayPct : 50;
                       return (
                         <div>
                           <div className="flex overflow-hidden h-2 mb-3">
@@ -745,21 +766,29 @@ export default function Home() {
                   <div>
                     <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Best Seasons</div>
                     <div className="grid grid-cols-4 gap-3">
-                      {[
-                        { name: "Spring", color: "#A0657B", pct: 30 + (selected.id * 7) % 60 },
-                        { name: "Summer", color: "#D4A060", pct: 20 + (selected.id * 13) % 55 },
-                        { name: "Autumn", color: "#C4956B", pct: 35 + (selected.id * 3) % 55 },
-                        { name: "Winter", color: "#4A7090", pct: 25 + (selected.id * 11) % 60 },
-                      ].map(s => (
-                        <button key={s.name} onClick={() => submitVote(selected.name, 'season', s.name)}
-                          className="text-center py-3 border border-faint hover:border-stone transition-colors">
-                          <div className="text-xs font-medium mb-2" style={{ color: s.color }}>{s.name}</div>
-                          <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
-                            <div className="h-full" style={{ width: `${s.pct}%`, background: s.color }} />
-                          </div>
-                          <div className="text-[10px] text-stone mt-1">{s.pct}%</div>
-                        </button>
-                      ))}
+                      {(() => {
+                        const sv = dbVotes[`${selected.name}:season`] || {};
+                        const seasons = [
+                          { name: "Spring", color: "#A0657B" },
+                          { name: "Summer", color: "#D4A060" },
+                          { name: "Autumn", color: "#C4956B" },
+                          { name: "Winter", color: "#4A7090" },
+                        ];
+                        const total = seasons.reduce((s, x) => s + (sv[x.name] || 0), 0);
+                        return seasons.map(s => {
+                          const pct = total > 0 ? Math.round((sv[s.name] || 0) / total * 100) : 0;
+                          return (
+                            <button key={s.name} onClick={() => submitVote(selected.name, 'season', s.name)}
+                              className="text-center py-3 border border-faint hover:border-stone transition-colors">
+                              <div className="text-xs font-medium mb-2" style={{ color: s.color }}>{s.name}</div>
+                              <div className="mx-auto w-8 h-1 bg-cream overflow-hidden">
+                                <div className="h-full" style={{ width: `${pct}%`, background: s.color }} />
+                              </div>
+                              <div className="text-[10px] text-stone mt-1">{total > 0 ? `${pct}%` : '—'}</div>
+                            </button>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 
@@ -768,22 +797,38 @@ export default function Home() {
                     <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Performance</div>
                     <div className="space-y-4">
                       {[
-                        { label: "Sillage", levels: ["Intimate", "Moderate", "Strong", "Beast"], idx: (selected.id * 7 + selected.name.length) % 4 },
-                        { label: "Longevity", levels: ["2–4h", "4–6h", "6–10h", "10h+"], idx: (selected.id * 3 + selected.name.length * 2) % 4 },
-                      ].map(perf => (
-                        <div key={perf.label}>
-                          <div className="flex justify-between text-xs mb-2">
-                            <span className="text-stone">{perf.label}</span>
-                            <span className="font-medium">{perf.levels[perf.idx]}</span>
+                        { label: "Sillage", voteType: "sillage", levels: ["Intimate", "Moderate", "Strong", "Beast"] },
+                        { label: "Longevity", voteType: "longevity", levels: ["2–4h", "4–6h", "6–10h", "10h+"] },
+                      ].map(perf => {
+                        const pv = dbVotes[`${selected.name}:${perf.voteType}`] || {};
+                        const total = Object.values(pv).reduce((s, v) => s + v, 0);
+                        let bestIdx = -1;
+                        if (total > 0) {
+                          let bestCount = 0;
+                          perf.levels.forEach((l, i) => { if ((pv[l] || 0) > bestCount) { bestCount = pv[l]; bestIdx = i; } });
+                        }
+                        return (
+                          <div key={perf.label}>
+                            <div className="flex justify-between text-xs mb-2">
+                              <span className="text-stone">{perf.label}</span>
+                              <span className="font-medium">{bestIdx >= 0 ? perf.levels[bestIdx] : 'No votes yet'}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              {perf.levels.map((l, i) => (
+                                <div key={l} onClick={() => submitVote(selected.name, perf.voteType, l)}
+                                  className="flex-1 h-1.5 transition-all cursor-pointer hover:opacity-80"
+                                  style={{ background: bestIdx >= 0 && i <= bestIdx ? '#9B8EC4' : '#EDE7DF' }} />
+                              ))}
+                            </div>
+                            <div className="flex gap-1 mt-2">
+                              {perf.levels.map(l => (
+                                <button key={l} onClick={() => submitVote(selected.name, perf.voteType, l)}
+                                  className="flex-1 text-[10px] text-stone hover:text-ink transition-colors cursor-pointer">{l}</button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="flex gap-1">
-                            {perf.levels.map((l, i) => (
-                              <div key={l} className="flex-1 h-1.5 transition-all"
-                                style={{ background: i <= perf.idx ? '#9B8EC4' : '#EDE7DF' }} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
