@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Stars, Tag, PerfumeCard, Header, Footer } from '../../components/shared';
 import { FAMILY_COLORS, TYPE_COLORS, NOTE_COLORS, NOTE_LABELS, ACCORD_COLORS, RETAILERS, slugify } from '../../lib/constants';
 import { supabase } from '../../../lib/supabase';
@@ -11,6 +11,27 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ name: '', rating: 5, title: '', body: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [dbVotes, setDbVotes] = useState({});
+  const [voted, setVoted] = useState({});
+
+  // Load votes for this perfume on mount
+  useEffect(() => {
+    async function loadVotes() {
+      try {
+        const { data } = await supabase.from('votes').select('*').eq('perfume_name', perfume.name);
+        if (data) {
+          const grouped = {};
+          data.forEach(v => {
+            const key = `${v.perfume_name}:${v.vote_type}`;
+            if (!grouped[key]) grouped[key] = {};
+            grouped[key][v.vote_value] = (grouped[key][v.vote_value] || 0) + 1;
+          });
+          setDbVotes(grouped);
+        }
+      } catch (e) { console.error('Vote load error:', e); }
+    }
+    loadVotes();
+  }, [perfume.name]);
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -18,11 +39,19 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
   }, []);
 
   const submitVote = useCallback(async (perfumeName, voteType, voteValue) => {
+    const voteKey = `${perfumeName}:${voteType}:${voteValue}`;
+    if (voted[voteKey]) return;
     try {
       await supabase.from('votes').insert({ perfume_name: perfumeName, vote_type: voteType, vote_value: voteValue });
+      setVoted(prev => ({ ...prev, [voteKey]: true }));
+      setDbVotes(prev => {
+        const key = `${perfumeName}:${voteType}`;
+        const existing = prev[key] || {};
+        return { ...prev, [key]: { ...existing, [voteValue]: (existing[voteValue] || 0) + 1 } };
+      });
       showToast(`Vote recorded!`);
     } catch (e) { console.error(e); }
-  }, [showToast]);
+  }, [voted, showToast]);
 
   const submitReview = useCallback(async () => {
     if (!newReview.name || !newReview.body) { showToast('Please fill in your name and review'); return; }
@@ -254,23 +283,77 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
               {/* Gender */}
               <div>
                 <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Gender Leaning</div>
-                <div className="flex gap-2 mt-4">
-                  {[["Feminine", "#A0657B"], ["Unisex", "#C4A882"], ["Masculine", "#4A7090"]].map(([label, color]) => (
-                    <button key={label} onClick={() => submitVote(perfume.name, 'gender', label)}
-                      className="flex-1 py-2 text-xs font-medium border border-faint hover:border-stone transition-colors" style={{ color }}>{label}</button>
-                  ))}
-                </div>
+                {(() => {
+                  const gv = dbVotes[`${perfume.name}:gender`] || {};
+                  const fem = gv['Feminine'] || 0;
+                  const masc = gv['Masculine'] || 0;
+                  const uni = gv['Unisex'] || 0;
+                  const total = fem + masc + uni;
+                  const fPct = total > 0 ? Math.round(fem / total * 100) : 33;
+                  const mPct = total > 0 ? Math.round(masc / total * 100) : 33;
+                  const uPct = total > 0 ? 100 - fPct - mPct : 34;
+                  return (
+                    <div>
+                      {total > 0 && (
+                        <>
+                          <div className="flex overflow-hidden h-2 mb-3">
+                            <div style={{ width: `${fPct}%`, background: '#A0657B' }} />
+                            <div style={{ width: `${uPct}%`, background: '#C4A882' }} />
+                            <div style={{ width: `${mPct}%`, background: '#4A7090' }} />
+                          </div>
+                          <div className="flex justify-between text-xs text-stone mb-3">
+                            <span>Feminine {fPct}%</span>
+                            <span>Unisex {uPct}%</span>
+                            <span>Masculine {mPct}%</span>
+                          </div>
+                        </>
+                      )}
+                      {total === 0 && <p className="text-xs text-stone mb-3">No votes yet — be the first!</p>}
+                      <div className="flex gap-2">
+                        {[["Feminine", "#A0657B"], ["Unisex", "#C4A882"], ["Masculine", "#4A7090"]].map(([label, color]) => (
+                          <button key={label} onClick={() => submitVote(perfume.name, 'gender', label)}
+                            className="flex-1 py-2 text-xs font-medium border border-faint hover:border-stone transition-colors" style={{ color }}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Day/Night */}
               <div>
                 <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Day or Night</div>
-                <div className="flex gap-2 mt-4">
-                  {[["Day", "#D4A060"], ["Night", "#2C3E6B"]].map(([label, color]) => (
-                    <button key={label} onClick={() => submitVote(perfume.name, 'daynight', label)}
-                      className="flex-1 py-2 text-xs font-medium border border-faint hover:border-stone transition-colors" style={{ color }}>{label}</button>
-                  ))}
-                </div>
+                {(() => {
+                  const dn = dbVotes[`${perfume.name}:daynight`] || {};
+                  const day = dn['Day'] || 0;
+                  const night = dn['Night'] || 0;
+                  const total = day + night;
+                  const dayPct = total > 0 ? Math.round(day / total * 100) : 50;
+                  const nightPct = total > 0 ? 100 - dayPct : 50;
+                  return (
+                    <div>
+                      {total > 0 && (
+                        <>
+                          <div className="flex overflow-hidden h-2 mb-3">
+                            <div style={{ width: `${dayPct}%`, background: '#D4A060' }} />
+                            <div style={{ width: `${nightPct}%`, background: '#2C3E6B' }} />
+                          </div>
+                          <div className="flex justify-between text-xs text-stone mb-3">
+                            <span>Day {dayPct}%</span>
+                            <span>Night {nightPct}%</span>
+                          </div>
+                        </>
+                      )}
+                      {total === 0 && <p className="text-xs text-stone mb-3">No votes yet — be the first!</p>}
+                      <div className="flex gap-2">
+                        {[["Day", "#D4A060"], ["Night", "#2C3E6B"]].map(([label, color]) => (
+                          <button key={label} onClick={() => submitVote(perfume.name, 'daynight', label)}
+                            className="flex-1 py-2 text-xs font-medium border border-faint hover:border-stone transition-colors" style={{ color }}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -280,20 +363,33 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
                 <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Performance</div>
                 <div className="space-y-4">
                   {[
-                    { label: "Sillage", value: perfume.sillage, levels: ["Intimate", "Moderate", "Strong", "Beast"] },
-                    { label: "Longevity", value: perfume.longevity, levels: ["Weak", "Moderate", "Long Lasting", "Beast"] },
+                    { label: "Sillage", voteType: "sillage", levels: ["Intimate", "Moderate", "Strong", "Beast"] },
+                    { label: "Longevity", voteType: "longevity", levels: ["2–4h", "4–6h", "6–10h", "10h+"] },
                   ].map(perf => {
-                    const idx = perf.value ? perf.levels.findIndex(l => l.toLowerCase() === (perf.value || '').toLowerCase()) : -1;
-                    const activeIdx = idx >= 0 ? idx : 2;
+                    const pv = dbVotes[`${perfume.name}:${perf.voteType}`] || {};
+                    const total = Object.values(pv).reduce((s, v) => s + v, 0);
+                    let bestIdx = -1;
+                    if (total > 0) {
+                      let bestCount = 0;
+                      perf.levels.forEach((l, i) => { if ((pv[l] || 0) > bestCount) { bestCount = pv[l]; bestIdx = i; } });
+                    }
                     return (
                       <div key={perf.label}>
                         <div className="flex justify-between text-xs mb-2">
                           <span className="text-stone">{perf.label}</span>
-                          <span className="font-medium">{perf.value || perf.levels[activeIdx]}</span>
+                          <span className="font-medium">{bestIdx >= 0 ? perf.levels[bestIdx] : 'No votes yet'}</span>
                         </div>
                         <div className="flex gap-1">
                           {perf.levels.map((l, i) => (
-                            <div key={l} className="flex-1 h-1.5" style={{ background: i <= activeIdx ? '#9B8EC4' : '#EDE7DF' }} />
+                            <div key={l} onClick={() => submitVote(perfume.name, perf.voteType, l)}
+                              className="flex-1 h-1.5 transition-all cursor-pointer hover:opacity-80"
+                              style={{ background: bestIdx >= 0 && i <= bestIdx ? '#9B8EC4' : '#EDE7DF' }} />
+                          ))}
+                        </div>
+                        <div className="flex gap-1 mt-2">
+                          {perf.levels.map(l => (
+                            <button key={l} onClick={() => submitVote(perfume.name, perf.voteType, l)}
+                              className="flex-1 text-[10px] text-stone hover:text-ink transition-colors cursor-pointer">{l}</button>
                           ))}
                         </div>
                       </div>
