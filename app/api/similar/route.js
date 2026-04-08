@@ -72,7 +72,7 @@ async function jsFallbackSimilarity(targetId, limit) {
     .from('perfumes')
     .select('*')
     .neq('id', targetId)
-    .limit(2000);
+    .limit(10000);
 
   if (!allPerfumes) return [];
 
