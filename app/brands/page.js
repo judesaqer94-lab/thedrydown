@@ -12,7 +12,7 @@ export const metadata = {
 };
 
 export default async function BrandsPage() {
-  const { data: allPerfumes } = await supabase.from('perfumes').select('name, brand, brand_type, family, concentration, gender, price_low, price_high, rating, year, image_url, top_notes').limit(2000);
+  const { data: allPerfumes } = await supabase.from('perfumes').select('name, brand, brand_type, family, concentration, gender, price_low, price_high, rating, year, image_url, top_notes').limit(10000);
 
   // Build brand data
   const brandMap = {};
