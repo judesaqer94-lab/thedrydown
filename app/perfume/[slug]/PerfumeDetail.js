@@ -266,15 +266,31 @@ export default function PerfumeDetail({ perfume, similar, reviews: initialReview
               {/* Rating */}
               <div>
                 <div className="text-xs uppercase tracking-widest text-stone font-medium mb-4">Rating</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-serif text-5xl">{perfume.rating}</span>
-                  <span className="text-stone text-sm">/ 5</span>
-                </div>
-                <div className="mt-2"><Stars value={perfume.rating} size={16} /></div>
+                {(() => {
+                  const rv = dbVotes[`${perfume.name}:rating`] || {};
+                  const communityVotes = Object.entries(rv);
+                  const communityTotal = communityVotes.reduce((s, [, count]) => s + count, 0);
+                  const communitySum = communityVotes.reduce((s, [score, count]) => s + Number(score) * count, 0);
+                  const baselineWeight = 10;
+                  const baselineRating = Number(perfume.rating) || 4.0;
+                  const blendedRating = communityTotal > 0
+                    ? ((baselineRating * baselineWeight + communitySum) / (baselineWeight + communityTotal)).toFixed(1)
+                    : baselineRating;
+                  return (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-serif text-5xl">{blendedRating}</span>
+                        <span className="text-stone text-sm">/ 5</span>
+                      </div>
+                      <div className="mt-2"><Stars value={Number(blendedRating)} size={16} /></div>
+                      <div className="text-xs text-stone mt-2">{communityTotal > 0 ? `${communityTotal} community votes` : 'Based on editorial rating'}</div>
+                    </>
+                  );
+                })()}
                 <div className="flex items-center gap-2 mt-4">
                   <span className="text-xs text-stone">Rate:</span>
                   {[1,2,3,4,5].map(s => (
-                    <span key={s} onClick={() => { submitVote(perfume.name, 'rating', String(s)); showToast(`Rated ${perfume.name} ${s}/5`); }}
+                    <span key={s} onClick={() => { submitVote(perfume.name, 'rating', String(s)); }}
                       className="cursor-pointer text-lg hover:scale-110 transition-transform" style={{ color: '#9B8EC4' }}>★</span>
                   ))}
                 </div>
