@@ -1,6 +1,5 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
-import { PERFUMES, BRAND_TYPES } from '../../data/perfumes';
 import { supabase } from '../../lib/supabase';
 
 // ═══ SMART MATCHING ═══
@@ -140,13 +139,9 @@ function findBestMatch(brand, fragrance, perfumes, concentration) {
   return bestScore > 50 ? bestMatch : null;
 }
 
-function findLocalPerfume(brand, fragrance, concentration) {
-  return findBestMatch(brand, fragrance, PERFUMES, concentration);
-}
-
 async function findSupabasePerfume(brand, fragrance, concentration) {
   try {
-    var res = await supabase.from('perfumes').select('*');
+    var res = await supabase.from('perfumes').select('*').limit(10000);
     if (!res.data || res.data.length === 0) return null;
     var match = findBestMatch(brand, fragrance, res.data, concentration);
     return match ? convertSupabasePerfume(match) : null;
@@ -297,14 +292,9 @@ export default function ScannerPage() {
         setLoading(false);
         return;
       }
-      setPhase('Searching local database...');
+      setPhase('Searching database...');
       await new Promise(function(r) { setTimeout(r, 300); });
-      var match = findLocalPerfume(data.brand, data.fragrance, data.concentration);
-      if (!match) {
-        setPhase('Searching full database...');
-        await new Promise(function(r) { setTimeout(r, 300); });
-        match = await findSupabasePerfume(data.brand, data.fragrance, data.concentration);
-      }
+      var match = await findSupabasePerfume(data.brand, data.fragrance, data.concentration);
       if (match) {
         var topNotes = match.notes.filter(function(n) { return n.position === 'top'; });
         var heartNotes = match.notes.filter(function(n) { return n.position === 'heart'; });
