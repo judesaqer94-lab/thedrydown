@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 export default async function NotesPage() {
-  const { data: allPerfumes } = await supabase.from('perfumes').select('top_notes, heart_notes, base_notes').limit(2000);
+  const { data: allPerfumes } = await supabase.from('perfumes').select('top_notes, heart_notes, base_notes').limit(10000);
   const noteMap = {};
   (allPerfumes || []).forEach(p => {
     const allNotes = `${p.top_notes || ''},${p.heart_notes || ''},${p.base_notes || ''}`.split(',').map(n => n.trim()).filter(Boolean);
