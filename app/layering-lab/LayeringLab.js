@@ -218,7 +218,7 @@ function CommunitySection({ perfA, perfB }) {
     try {
       const res = await fetch('/api/layering-combos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfumeAId: perfA.id, perfumeBId: perfB.id, submittedBy: form.name || 'Anonymous', review: form.review, rating: form.rating }) });
       const data = await res.json();
-      if (res.ok) { setToast('Submitted! Your combo will appear after review.'); setShowForm(false); setForm({ name: '', review: '', rating: 4 }); } else { setToast(data.error || 'Could not submit'); }
+      if (res.ok) { setToast('Review submitted!'); setShowForm(false); setForm({ name: '', review: '', rating: 4 }); const refreshRes = await fetch(`/api/layering-combos?perfumeA=${perfA.id}&perfumeB=${perfB.id}`); const refreshData = await refreshRes.json(); setCombos(refreshData.combos || []); } else { setToast(data.error || 'Could not submit'); }
     } catch { setToast('Something went wrong'); }
     setSubmitting(false); setTimeout(() => setToast(null), 3000);
   }, [form, perfA, perfB]);
